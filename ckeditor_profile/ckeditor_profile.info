@@ -1,0 +1,12 @@
+name = CKEditor Profile
+description = Provides default settings for CKEditor
+core = 7.x
+package = CMS
+php = 5.2.4
+version = 7.x-1.0
+project = ckeditor_profile
+dependencies[] = ckeditor
+features[ckeditor_profile][] = Advanced
+features[ckeditor_profile][] = CKEditor Global Profile
+features[ckeditor_profile][] = Full
+features[features_api][] = api:1
