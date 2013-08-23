@@ -1,0 +1,212 @@
+<?php
+
+class CMSWebTestCase extends DrupalWebTestCase {
+
+
+    protected static $bundle;
+    protected static $role_administrator = 'administrator';
+    protected static $role_authenticated = 'authenticated';
+
+
+    /**
+     * Test currently logged user can create a vocabulary term.
+     *
+     * @param string $term_name Name of the term to create
+     * @param string $voc_machine_name Vocabulary machine name
+     * @param string $role_name Current role name (for logging purposes)
+     */
+    function try_vocabulary_create_term($term_name, $voc_machine_name, $role_name) {
+        $post = array('name' => $term_name);
+        $this->drupalPost(sprintf('admin/structure/taxonomy/%s/add', $voc_machine_name), $post, t('Save'));
+        $this->assertText(sprintf('Created new term %s', $term_name),
+            sprintf('%s: Role "%s" cannot create term in vocabulary %s', self::$bundle, $role_name, $voc_machine_name));
+    }
+
+
+    /**
+     * Test currently logged user can list vocabulary terms.
+     *
+     * @param string $test_term Term to look-up in listing (created apriori)
+     * @param string $voc_machine_name Vocabulary machine name
+     * @param string $role_name Current role name (for logging purposes)
+     */
+    function try_vocabulary_list_term($test_term, $voc_machine_name, $role_name) {
+        $this->drupalGet(sprintf('admin/structure/taxonomy/%s', $voc_machine_name));
+        $this->assertNoText('Access Denied',
+            sprintf('%s: Role "%s" cannot list terms in vocabulary %s', self::$bundle, $role_name, $voc_machine_name)
+        );
+        $this->assertText($test_term,
+            sprintf('%s: Role "%s" cannot list terms in vocabulary %s', self::$bundle, $role_name, $voc_machine_name)
+        );
+    }
+
+
+    /**
+     * Test currently logged user can list vocabulary terms.
+     *
+     * @param int $term_id ID of the term to edit
+     * @param string $voc_machine_name Vocabulary machine name
+     * @param string $role_name Current role name (for logging purposes)
+     */
+    function try_vocabulary_edit_term($term_id, $voc_machine_name, $role_name) {
+        $term_name = 'new_term_' . $term_id;
+        $post = array('name' => $term_name);
+        $this->drupalPost(sprintf('taxonomy/term/%s/edit', $term_id), $post, t('Save'));
+        $this->assertText(sprintf('Updated term %s', $term_name),
+            sprintf('%s: Role "%s" cannot edit term in vocabulary %s', self::$bundle, $role_name, $voc_machine_name));
+    }
+
+
+    /**
+     * Test currently logged user can list vocabulary terms.
+     *
+     * @param int $term_id ID of the term to edit
+     * @param string $voc_machine_name Vocabulary machine name
+     * @param string $role_name Current role name (for logging purposes)
+     */
+    function try_vocabulary_delete_term($term_id, $voc_machine_name, $role_name) {
+        $term_name = 'new_term_' . $term_id;
+        $post = array('name' => $term_name);
+        $this->drupalPost(sprintf('taxonomy/term/%s/edit', $term_id), $post, t('Delete'));
+        $this->drupalPost(null, array(), t('Delete'));
+        $this->assertText(sprintf('Deleted term %s', $term_name),
+            sprintf('%s: Role "%s" cannot edit term in vocabulary %s', self::$bundle, $role_name, $voc_machine_name));
+    }
+
+
+    /**
+     * Ensure role Anonymous (Logged out users) do not have access to create/view/edit/delete forms.
+     * @param int $existing_nid ID of an existing node of correct type
+     * @param string $text_lookup Look into page to ensure test does not exist (for view mode)
+     * @param string $url_listing_view URL to a listing view. If NULL nothing is tested
+     * @param string $url_add_view URL to adding a new node
+     */
+    function try_anonymous_role($existing_nid, $text_lookup, $url_listing_view, $url_add_view) {
+        $this->drupalLogout();
+
+        $this->drupalGet($url_add_view);
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to create form');
+        $this->assertNoText('Create');
+
+        variable_set('theme_default', 'cms_theme');
+        unset($GLOBALS['theme']);
+
+        $this->drupalGet('node/' . $existing_nid);
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to index page');
+        $this->assertNoText($text_lookup);
+
+        if($url_listing_view !== null) {
+            $this->drupalGet($url_listing_view);
+            $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to admin listing page');
+            $this->assertNoText($text_lookup);
+        }
+
+        $this->drupalGet('node/' . $existing_nid . '/edit');
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to edit form');
+        $this->assertNoText('Edit', self::$bundle . ': Anonymous user has Edit button (link) on index page');
+        $this->assertNoFieldById('edit-delete', self::$bundle . ': Anonymous user has Delete button on index page');
+        $this->assertNoText($text_lookup);
+
+        $this->drupalGet('node/' . $existing_nid . '/delete');
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to delete form');
+        $this->assertNoText($text_lookup);
+    }
+
+    function try_authenticated_role($existing_nid, $text_lookup, $url_listing_view, $url_add_view) {
+        $user = $this->drupalCreateUser();
+        $this->drupalLogin($user);
+        $this->assertNotNull($this->loggedInUser);
+
+        $this->ensure_access('node/' . $existing_nid, self::$role_authenticated, $text_lookup);
+        $this->ensure_access($url_listing_view, self::$role_authenticated, $text_lookup);
+        $this->ensure_access_denied($url_add_view, self::$role_authenticated);
+        $this->ensure_access_denied('node/' . $existing_nid . '/edit', self::$role_authenticated, $text_lookup);
+        $this->ensure_access_denied('node/' . $existing_nid . '/delete', self::$role_authenticated, $text_lookup);
+    }
+
+    function try_manager_role($role_name, $form_field_values, $url_listing_view, $url_add_view, $frontend_name = null) {
+        if(!isset($frontend_name)) $frontend_name = implode(' ', array_map(function($word) { return ucwords($word); }, preg_split( "/(-|_)/", self::$bundle )));
+
+        $node_title = $form_field_values['title'];
+        $new_node_title = $node_title . '_NEW';
+
+        $add = $form_field_values;
+        $edit = array(
+            'title' => $new_node_title
+        );
+
+        $this->login_as($role_name);
+        $this->ensure_allowed_to_post($url_add_view, $role_name, $add, sprintf('%s %s has been created',$frontend_name, $node_title));
+        $nid = str_replace($this->getAbsoluteUrl('/node/'), '', $this->getUrl());
+        $this->ensure_access('node/' . $nid, $role_name, $node_title);
+        $this->ensure_access($url_listing_view, $role_name, $node_title);
+        $this->ensure_allowed_to_post(sprintf('node/%s/edit',$nid), $role_name, $edit, sprintf('%s %s has been updated', $frontend_name, $new_node_title));
+        $this->ensure_allowed_to_post(sprintf('node/%s/delete', $nid), $role_name, array(), sprintf('%s %s has been deleted', $frontend_name, $new_node_title), 'Delete');
+    }
+
+    function try_administrator_role($form_field_values, $url_listing_view, $url_add_view, $frontend_name = null) {
+        $this->try_manager_role(self::$role_administrator, $form_field_values, $url_listing_view, $url_add_view, $frontend_name);
+    }
+
+    function ensure_access_denied_for_vocabulary($voc_machine_name, $role_name) {
+        $this->drupalGet(sprintf('admin/structure/taxonomy/%s/add', $voc_machine_name));
+        $this->assertText('Access Denied', sprintf('%s: Role %s has access to vocabulary edit page', self::$bundle, $role_name));
+    }
+
+    function ensure_access_for_vocabulary($voc_machine_name, $role_name, $new_tid_id) {
+        $this->try_vocabulary_create_term('NEW_TERM', $voc_machine_name, $role_name);
+        $this->try_vocabulary_list_term('NEW_TERM', $voc_machine_name, $role_name);
+        $this->try_vocabulary_edit_term($new_tid_id, $voc_machine_name, $role_name);
+        $this->try_vocabulary_delete_term($new_tid_id, $voc_machine_name, $role_name);
+    }
+
+    function ensure_access_denied($url, $role_name, $text_lookup = null) {
+        $this->drupalGet($url);
+        $this->assertText('Access Denied',
+            sprintf('%s: Role "%s" has access to page at URL: %s', self::$bundle, $role_name, $url));
+        if(!empty($text_lookup)) {
+            if(is_array($text_lookup)) {
+                foreach($text_lookup as $term) {
+                    $this->assertNoText($term,
+                        sprintf('%s: Role "%s" has access to form at %s', self::$bundle, $role_name, $url)
+                    );
+                }
+            } else {
+                $this->assertNoText($text_lookup,
+                    sprintf('%s: Role "%s" has access to form at %s', self::$bundle, $role_name, $url)
+                );
+            }
+        }
+    }
+
+
+    function ensure_access($url, $role_name, $text_lookup) {
+        $this->drupalGet($url);
+        if(is_array($text_lookup)) {
+            foreach($text_lookup as $term) {
+                $this->assertText($term,
+                    sprintf('%s: Role "%s" cannot access form at %s', self::$bundle, $role_name, $url)
+                );
+            }
+        } else {
+            $this->assertText($text_lookup,
+                sprintf('%s: Role "%s" cannot access form at %s', self::$bundle, $role_name, $url)
+            );
+        }
+    }
+
+    function ensure_allowed_to_post($url_add_node, $role_name, $post_fields, $text_lookup, $button_text = 'Save') {
+        $this->drupalPost($url_add_node, $post_fields, $button_text);
+
+        if(!is_array($text_lookup)) $text_lookup = array($text_lookup);
+        foreach($text_lookup as $text) {
+            $this->assertText($text, sprintf('%s: Role "%s" cannot submit form at %s', self::$bundle, $role_name, $url_add_node));
+        }
+    }
+
+    function login_as($role_name) {
+        $user = $this->drupalCreateUser();
+        CMSUtils::user_assign_role($user, $role_name);
+        $this->drupalLogin($user);
+    }
+}

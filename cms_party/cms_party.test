@@ -1,0 +1,230 @@
+<?php
+
+/**
+ * SimpleTest cases for CMS party module
+ * Verify the functionalities of CMS party module
+ */
+class CMSPartyWebTestCase extends CMSWebTestCase {
+
+    protected $user;
+
+    public static function getInfo() {
+        return array(
+            'name' => 'CMS Party',
+            'description' => 'Verify functionality of CMS Party',
+            'group' => 'CMS Tests'
+        );
+    }
+
+
+    function setUp() {
+        parent::setUp('taxonomy_access_fix', 'countries', 'cms_party', 'country', 'legal_instrument', 'date_popup');
+        self::$bundle = CMSParty::$bundle;
+    }
+
+
+    function test_security_role_anonymous() {
+        // Create cms party node
+        $agreement = CMSUtils::vocabulary_get_or_create_term('agreement', VOC_INSTRUMENT_TYPE);
+        $instrument = CMSLegalInstrument::node_create('TEST', 'test_instrument', $agreement->tid, '2011-12-22');
+        $this->assertNotNull($instrument);
+        $this->assertFalse(empty($instrument->nid));
+        $country1 = Country::node_create('Afghanistan', 'AF');
+        $this->assertNotNull($country1);
+        $this->assertFalse(empty($country1->nid));
+        $s1 = CMSUtils::vocabulary_get_or_create_term('X', VOC_PARTY_STATUS);
+        $party = CMSParty::node_create($country1->nid, $instrument->nid, $s1->tid, '2012-10-02');
+
+        $this->drupalLogout();
+        $this->try_anonymous_role($party->nid, 'parties/listing', 'Afghanistan');
+
+        // CREATE
+        $this->drupalGet('node/add/cms-party');
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to create form');
+
+        // READ
+        variable_set('theme_default', 'cms_theme');
+        unset($GLOBALS['theme']);
+
+        $this->drupalGet('node/' . $party->nid);
+        $this->assertNoText('Afghanistan', self::$bundle . ': Anonymous has access to index page');
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to index page');
+
+        // LIST
+        $this->drupalGet('parties/listing');
+        $this->assertNoText('Albania', self::$bundle . ': Anonymous has access to admin listing page');
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to admin listing page');
+
+        // UPDATE
+        $this->drupalGet('node/' . $party->nid . '/edit');
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to edit form');
+        $this->assertNoText('Edit', self::$bundle . ': Anonymous user has Edit button on index page');
+
+        // DELETE
+        $this->drupalGet('node/' . $party->nid . '/delete');
+        $this->assertText('Access Denied', self::$bundle . ': Anonymous has access to delete form');
+
+        // Test permisssions
+        $this->try_anonymous_role($party->nid, 'Afghanistan', 'parties/listing', 'node/add/cms-party');
+        $this->ensure_access_denied_for_vocabulary(VOC_PARTY_STATUS, 'Anonymous');
+    }
+
+
+    function test_security_role_authenticated() {
+        // Create cms party node
+        $agreement = CMSUtils::vocabulary_get_or_create_term('agreement', VOC_INSTRUMENT_TYPE);
+        $i1 = CMSLegalInstrument::node_create('TEST', 'test_instrument', $agreement->tid, '2011-12-22');
+        $this->assertNotNull($i1);
+        $this->assertFalse(empty($i1->nid));
+
+        $country1 = Country::node_create('Afghanistan', 'AF');
+        $this->assertNotNull($country1);
+        $this->assertFalse(empty($country1->nid));
+        $s1 = CMSUtils::vocabulary_get_or_create_term('X', VOC_PARTY_STATUS);
+
+        $party = CMSParty::node_create($country1->nid, $i1->nid, $s1->tid, '2012-10-02');
+
+        // Test permissions
+        $this->try_authenticated_role($party->nid, 'Afghanistan', 'parties/listing', 'node/add/cms-party');
+        $this->ensure_access_denied_for_vocabulary(VOC_PARTY_STATUS, self::$role_authenticated);
+    }
+
+    function ensure_allowed_to_edit_cms_party($role_name) {
+        $agreement = CMSUtils::vocabulary_get_or_create_term('agreement', VOC_INSTRUMENT_TYPE);
+        $i1 = CMSLegalInstrument::node_create('test', 'test_instrument', $agreement->tid, '2011-12-22');
+        $i2 = CMSLegalInstrument::node_create('TEST2', 'test_instrument2', $agreement->tid, '2011-12-22');
+        $this->assertNotNull($i1);
+        $this->assertFalse(empty($i1->nid));
+
+        $country1 = Country::node_create('Afghanistan', 'AF');
+        $country2 = Country::node_create('Canada', 'CA');
+        $this->assertNotNull($country1);
+        $this->assertFalse(empty($country1->nid));
+
+        $s1 = CMSUtils::vocabulary_get_or_create_term('X', VOC_PARTY_STATUS);
+
+        // CREATE
+        $add = array(
+            'field_cms_party_country[und]' => $country1->nid,
+            'field_cms_party_instrument[und]' => $i1->nid,
+            'field_cms_party_status[und]' => $s1->tid,
+        );
+        // UPDATE
+        $edit = array(
+            'field_cms_party_country[und]' => $country2->nid,
+            'field_cms_party_instrument[und]' => $i2->nid
+        );
+
+        $this->login_as($role_name);
+        $this->ensure_allowed_to_post('node/add/cms-party', $role_name, $add, array('Afghanistan', 'test', 'X'));
+        $this->ensure_access('node/5', $role_name, 'Afghanistan');
+        $this->ensure_access('node/5', $role_name, 'test');
+        $this->ensure_access('node/5', $role_name, 'X');
+        $this->ensure_access('parties/listing', $role_name, 'Afghanistan');
+        $this->ensure_allowed_to_post('node/5/edit', $role_name, $edit, array('Canada', 'TEST2', 'X'));
+        $this->ensure_allowed_to_post('node/5/delete', $role_name, array(), array('Convention Party', 'has been deleted'), 'Delete');
+        $this->ensure_access_for_vocabulary(VOC_PARTY_STATUS, $role_name, 2);
+    }
+
+    function test_security_role_manager() {
+        $this->ensure_allowed_to_edit_cms_party(ROLE_MANAGE_PARTY);
+    }
+
+    function test_security_role_administrator() {
+        $this->ensure_allowed_to_edit_cms_party(self::$role_administrator);
+    }
+
+    function test_node_create() {
+        $agreement = CMSUtils::vocabulary_get_or_create_term('agreement', VOC_INSTRUMENT_TYPE);
+        $instrument = CMSLegalInstrument::node_create('TEST', 'test_instrument', $agreement->tid, '2011-12-22');
+        $this->assertNotNull($instrument);
+        $this->assertFalse(empty($instrument->nid));
+        
+        // Create CMS Country
+        $country = Country::node_create('Afghanistan', 'AF');
+        $this->assertNotNull($country);
+        $this->assertFalse(empty($country->nid));
+
+        $s1 = CMSUtils::vocabulary_get_or_create_term('X', VOC_PARTY_STATUS);
+
+        // Add party
+        $party = CMSParty::node_create($country->nid, $instrument->nid, $s1->tid, '2012-10-02');
+        $this->assertNotNull($party);
+        $this->assertFalse(empty($party->nid));
+        $this->assertEqual(1, $party->status);
+
+        $dbparty = node_load($party->nid);
+        $this->assertEqual(1, $dbparty->field_cms_party_instrument[$dbparty->language][0]['target_id']);
+        $this->assertEqual(2, $dbparty->field_cms_party_country[$dbparty->language][0]['target_id']);
+        $this->assertEqual($s1->tid, $dbparty->field_cms_party_status[$dbparty->language][0]['tid']);
+    }
+
+
+    function test_get_party_countries() {
+        $agreement = CMSUtils::vocabulary_get_or_create_term('agreement', VOC_INSTRUMENT_TYPE);
+        $instrument = CMSLegalInstrument::node_create('AEWA', 'test_instrument', $agreement->tid, '2011-12-22');
+        $this->assertNotNull($instrument);
+        $this->assertFalse(empty($instrument->nid));
+
+        $s1 = CMSUtils::vocabulary_get_or_create_term('X', VOC_PARTY_STATUS);
+        $s2 = CMSUtils::vocabulary_get_or_create_term('(x)', VOC_PARTY_STATUS);
+
+        // Create Country
+        $country = Country::node_create('Denmark', 'DK');
+        CMSParty::node_create($country->nid, $instrument->nid, $s1->tid, '2012-10-02');
+
+        $country2 = Country::node_create('Italy', 'IT');
+        CMSParty::node_create($country2->nid, $instrument->nid, $s2->tid, '2012-10-03');
+
+        $countries = CMSParty::get_party_countries();
+        $this->assertEqual(2, count($countries));
+
+        $this->assertTrue('Denmark', $countries[2]->title);
+        $this->assertTrue('Italy', $countries[4]->title);
+    }
+
+
+    function test_get_party_instruments() {
+        $agreement = CMSUtils::vocabulary_get_or_create_term('agreement', VOC_INSTRUMENT_TYPE);
+        $i1 = CMSLegalInstrument::node_create('I1', 'test_instrument', $agreement->tid, '2011-12-22');
+        $i2 = CMSLegalInstrument::node_create('I2', 'test_instrument', $agreement->tid, '2011-12-22');
+
+        $s1 = CMSUtils::vocabulary_get_or_create_term('X', VOC_PARTY_STATUS);
+        $s2 = CMSUtils::vocabulary_get_or_create_term('(x)', VOC_PARTY_STATUS);
+
+        $c1 = Country::node_create('Denmark', 'DK');
+        CMSParty::node_create($c1->nid, $i1->nid, $s1->tid, '2012-10-02');
+
+        $c2 = Country::node_create('Italy', 'IT');
+        CMSParty::node_create($c2->nid, $i2->nid, $s2->tid, '2012-10-03');
+
+        $instruments = CMSParty::get_party_instruments();
+        $this->assertEqual(2, count($instruments));
+        $this->assertEqual('I1', $instruments[1]->title);
+        $this->assertEqual('I2', $instruments[2]->title);
+    }
+
+
+    function test_get_all_objects() {
+        $agreement = CMSUtils::vocabulary_get_or_create_term('agreement', VOC_INSTRUMENT_TYPE);
+        $i1 = CMSLegalInstrument::node_create('I1', 'test_instrument', $agreement->tid, '2011-12-22');
+        $i2 = CMSLegalInstrument::node_create('I2', 'test_instrument', $agreement->tid, '2011-12-22');
+
+        $s1 = CMSUtils::vocabulary_get_or_create_term('X', VOC_PARTY_STATUS);
+        $s2 = CMSUtils::vocabulary_get_or_create_term('(x)', VOC_PARTY_STATUS);
+
+        $c1 = Country::node_create('Denmark', 'DK');
+        $p1 = CMSParty::node_create($c1->nid, $i1->nid, $s1->tid, '2012-10-02');
+
+        $c2 = Country::node_create('Italy', 'IT');
+        $p2 = CMSParty::node_create($c2->nid, $i2->nid, $s2->tid, '2012-10-03');
+
+        $rows = CMSParty::get_all_objects();
+        reset($rows);
+        $this->assertEqual(2, count($rows));
+        $row = current($rows);
+        $this->assertEqual($p1->nid, $row->nid);
+        $row = next($rows);
+        $this->assertEqual($p2->nid, $row->nid);
+    }
+}

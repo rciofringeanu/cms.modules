@@ -1,0 +1,1126 @@
+<?php
+
+require_once(dirname(__FILE__) . '/cms.features.inc');
+require_once(dirname(__FILE__) . '/formatters.inc');
+
+define('VOC_REGION', 'region');
+define('VOC_CURRENCY', 'currency');
+define('VOC_LANGUAGES', 'languages');
+define('VOC_UN_LANGUAGES', 'un_languages');
+
+function cms_menu(){
+    $items['node/%node/unpublish'] = array(
+        'title' => 'Delete',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('cms_node_unpublish_confirm', 1),
+        'access callback' => 'node_access',
+        'access arguments' => array('delete', 1),
+        'weight' => 1,
+        'type' => MENU_LOCAL_TASK,
+        'context' => MENU_CONTEXT_INLINE,
+    );
+      return $items;
+}
+
+
+function cms_node_unpublish_confirm_submit($form, &$form_state){
+    $node = node_load($form_state['values']['nid']);
+    if ($form_state['values']['confirm']) {
+        node_unpublish_action($node);
+        node_save($node);
+        watchdog('content', '@type: deleted %title.', array('@type' => $node->type, '%title' => $node->title));
+        drupal_set_message(t('@type %title has been deleted.', array('@type' => node_type_get_name($node), '%title' => $node->title)));
+    }
+    $form_state['redirect'] = $node->type.'/listing';
+}
+
+
+/**
+ * Menu callback -- ask for confirmation of node unpublish
+ */
+function cms_node_unpublish_confirm($form, &$form_state, $node) {
+    $form['#node'] = $node;
+    // Always provide entity id in the same form key as in the entity edit form.
+    $form['nid'] = array('#type' => 'value', '#value' => $node->nid);
+    return confirm_form($form,
+        t('Are you sure you want to delete %title?', array('%title' => $node->title)),
+        'node/' . $node->nid,
+        t(''),
+        t('Delete'),
+        t('Cancel')
+    );
+}
+
+
+function cms_form_alter(&$form, &$form_state, $form_id) {
+    //dsm($form);
+    //dsm($form_state);
+}
+
+function cms_date_format_types() {
+    variable_set('date_format_cms_date', 'd F Y');
+
+    return array(
+        'cms_date' => t('Full date'),
+    );
+}
+
+function cms_date_formats() {
+    return array(
+        array(
+            'type' => 'cms_date',
+            'format' => 'd/m/Y',
+            'locales' => array(),
+        ),
+    );
+}
+
+/**
+ * This is the base class that contains code common to all modules.
+ * This class contains various utility functions that can be reused in
+ * other parts of the project.
+ *
+ * Cannot be inherited by other modules to prevent dependency issues
+ */
+class CMSBase {
+
+
+    /**
+     * Create a new Drupal node node instance
+     *
+     * @param string $title Node title
+     * @param string $type Node type (Content type)
+     * @param bool $save Save (TRUE) the node before return
+     * @return stdClass The node object initialized
+     */
+    static function drupal_node_create($title, $type, $save = TRUE, $uuid = NULL) {
+        global $user;
+        $node = new stdClass();
+        $node->type = $type;
+        node_object_prepare($node);
+        $node->title = $title;
+        $node->language = CMSUtils::get_default_language();
+        $node->status = 1;
+        $node->uid = $user->uid;
+        $node->changed = $_SERVER['REQUEST_TIME'];
+        $node->created = $_SERVER['REQUEST_TIME'];
+        $node = node_submit($node);
+        $node->uuid = $uuid;
+        if($save) {
+            node_save($node);
+        }
+        return $node;
+    }
+
+
+    /**
+     * Retrieve the files from a directory, excluding "." and ".."
+     *
+     * @param string $directory Root directory to list files from
+     * @param string $pattern Filter patter (usually for file extension), for instance "\.txt"
+     * @param boolean $subdirs If TRUE scan subdirectories
+     * @param array $exempt List of filenames to ignore. Must be whole filename.
+     * @param array $files Used internally for recursion, when $subdirs is true
+     *
+     * @return An array with absolute filenames
+     */
+    static function list_directory_files($directory, $pattern = NULL, $subdirs = FALSE, $exempt = array(), &$files = array()) {
+        if (empty($directory)) {
+            return array();
+        }
+        if ($directory[strlen($directory) - 1] != DIRECTORY_SEPARATOR) {
+            $directory = $directory . DIRECTORY_SEPARATOR;
+        }
+        $handle = opendir($directory);
+        $exempt = is_array($exempt) ? array_merge($exempt, array('.', '..')) : array('.', '..', $exempt);
+        while (false !== ($resource = readdir($handle))) {
+            if (!in_array(strtolower($resource), $exempt)) {
+                $path = $directory . $resource;
+                if ($subdirs && is_dir($path)) {
+                    array_merge($files, CMSBase::list_directory_files($path, $pattern, $subdirs, $exempt, $files));
+                } else {
+                    if (empty($pattern) || preg_match("/{$pattern}/", $path)) {
+                        $files[] = $path;
+                    }
+                }
+            }
+        }
+        closedir($handle);
+        return $files;
+    }
+
+
+    /**
+     * Create new root vocabulary (no parent).
+     * @param string $name
+     * @param string $machine_name
+     * @return integer Same as taxonomy_vocabulary_save, or 0 if already exists
+     * @see CMSUtils::vocabulary_create
+     */
+    static function vocabulary_create($name, $machine_name) {
+        return CMSUtils::vocabulary_create($name, $machine_name);
+    }
+
+
+    /**
+     * Create new role if it doesn't already exists
+     *
+     * @param string $machine_name Role machine name
+     * @return boolean TRUE if role exists or was successfully created/touched
+     */
+    static function role_create($machine_name) {
+        $ret = FALSE;
+        $existing = user_roles();
+        if(!in_array($machine_name, $existing)) {
+            $role = new stdClass();
+            $role->name = $machine_name;
+            $ret = user_role_save($role);
+            if($ret === FALSE) {
+                CMSUtils::println('Failed to create role %s', $machine_name);
+            } else {
+                $ret = TRUE;
+            }
+        } else {
+            $ret = TRUE;
+        }
+        return $ret;
+    }
+
+
+    ///////////////        Node field getters and setters          ///////////////
+
+    /**
+     * Retrieve a single taxonomic term for a node field of type "Term reference" to vocabulary
+     *
+     * @param stdClass $node Drupal node
+     * @param string $field_name Name of the node field
+     * @param string $vocabulary_name Name of the term's vocabulary
+     * @return Taxonomic term from vocabulary or FALSE
+     */
+    static function get_field_taxonomic_term($node, $field_name, $vocabulary_name = NULL) {
+        $ret = CMSUtils::get_node_simple_value($node, $field_name, 'tid');
+        if(!empty($ret)) {
+            $ret = taxonomy_term_load($ret);
+        } else {
+            $ret = FALSE;
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Return the name of the vocabulary term instead of term object reference
+     *
+     * @param stdClass $node Drupal node
+     * @param string $field_name Name of the node field
+     * @param string $vocabulary_name Name of the term's vocabulary
+     * @return string Term name or empty string
+     */
+    static function get_field_taxonomic_term_name($node, $field_name, $vocabulary_name = NULL) {
+        $ob = self::get_field_taxonomic_term($node, $field_name, $vocabulary_name);
+        if(!empty($ob)) {
+            return $ob->name;
+        }
+        return NULL;
+    }
+
+    /**
+     * Assign a single-valued taxonomic term to a node field of type "Term reference" to vocabulary.
+     * Non-existing terms are created
+     * @param stdClass $node Drupal node
+     * @param string $field_name Name of the node field
+     * @param string $vocabulary_name Name of the term's vocabulary
+     * @param array $data Data to get information from (ex. JSON). Must contain key $field_name
+     */
+    static function set_field_taxonomic_term(&$node, $field_name, $vocabulary_name, $data) {
+        if(!empty($data[$field_name])) {
+            if(!is_array($data[$field_name])) {
+                $term = CMSUtils::vocabulary_get_or_create_term($data[$field_name], $vocabulary_name);
+                if(!empty($term)) {
+                    self::set_field_single_value($node, $field_name, array($field_name => $term->tid), 'tid');
+                } else {
+                    CMSUtils::println("CMSBase::set_field_taxonomic_term: Cannot find term %s", $data[$field_name]);
+                }
+            } else {
+                CMSUtils::println("CMSBase::set_field_taxonomic_term: Warning! Array passed instead of string (%s)", print_r($data[$field_name], TRUE));
+            }
+        }
+    }
+
+
+    /**
+     * Retrieve a multi-valued taxonomic term for a node field of type "Term reference" to vocabulary
+     *
+     * @param stdClass $node Drupal node
+     * @param string $field_name Name of the node field
+     * @param string $vocabulary_name Name of the term's vocabulary
+     * @return Taxonomic term from vocabulary or FALSE
+     */
+    static function get_field_taxonomic_terms($node, $field_name, $vocabulary_name) {
+        $ret = array();
+        $terms = CMSUtils::get_node_list_value($node, $field_name, 'tid');
+        foreach($terms as $tid) {
+            $term = taxonomy_term_load($tid);
+            if(!empty($term)) {
+                $ret[] = $term;
+            }
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Return the name of the vocabulary term instead of term object reference
+     *
+     * @param object $node Drupal node
+     * @param string $field_name Name of the node field
+     * @param string $vocabulary_name Name of the term's vocabulary
+     * @return string Term name or empty string
+     */
+    static function get_field_taxonomic_terms_names($node, $field_name, $vocabulary_name) {
+        $ret = array();
+        $arr = self::get_field_taxonomic_terms($node, $field_name, $vocabulary_name);
+        foreach($arr as $term) {
+            $ret[] = $term->name;
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Assign a multi-valued taxonomic term to a node field of type "Term reference" to vocabulary.
+     * Non-existing terms are created
+     * @param stdClass $node Drupal node
+     * @param string $field_name Name of the node field
+     * @param string $vocabulary_name Name of the term's vocabulary
+     * @param array $data Data to get information from (ex. JSON). Must contain key $field_name
+     * @return integer Number of terms imported
+     */
+    static function set_field_taxonomic_terms(&$node, $field_name, $vocabulary_name, $data) {
+        $ret = 0;
+        if(!empty($data[$field_name])) {
+            if(is_array($data[$field_name])) {
+                $ids = array();
+                foreach($data[$field_name] as $term_name) {
+                    if (!empty($term_name)) {
+                        $term = CMSUtils::vocabulary_get_or_create_term($term_name, $vocabulary_name);
+                        $ids[] = $term->tid;
+                    }
+                }
+                if(!empty($ids)) {
+                    $ret = count($ids);
+                    self::set_field_list_value($node, $field_name, array($field_name => $ids), 'tid');
+                }
+            } else {
+                CMSUtils::println("CMSBase::set_field_taxonomic_terms: Warning! Argument is not an array (%s)", print_r($data[$field_name], TRUE));
+            }
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Decode EntityReference field to LegalInstrument content type
+     * @param stdClass $node Drupal node
+     * @param string $field_name Drupal node field name
+     * @return stdClass Instrument object or NULL
+     */
+    static function get_field_instrument($node, $field_name) {
+        $ret = NULL;
+        $id = self::get_field_single_target_id($node, $field_name);
+        if(!empty($id)) {
+            //@todo: Optimize with get_instrument_by_id($id)
+            $instrument_cache = CMSLegalInstrument::cms_instruments_by_id();
+            if(array_key_exists($id, $instrument_cache)) {
+                $ret = $instrument_cache[$id];
+            } else {
+                CMSUtils::println('CMSBase::get_field_instrument() : Cannot decode instrument with id: %d', $id);
+            }
+        }
+        return $ret;
+    }
+
+
+    static function get_field_instrument_name($node, $field_name) {
+        $ob = self::get_field_instrument($node, $field_name);
+        if($ob != NULL) {
+            return $ob->title;
+        }
+        return NULL;
+    }
+
+    static function set_field_instrument(&$node, $field_name, $data) {
+        $ret = NULL;
+        if(!empty($data[$field_name])) {
+            if(array_key_exists($field_name, $data)) {
+                $title = $data[$field_name];
+                $instrument_cache = CMSLegalInstrument::list_keyed_by_name();
+                if(array_key_exists($title, $instrument_cache)) {
+                    $instrument = $instrument_cache[$title];
+                    self::set_field_single_value($node, $field_name, array($field_name => $instrument->nid), 'target_id');
+                } else {
+                    CMSUtils::println("CMSBase::set_field_instrument(): Instrument with title '%s' does not exist!", $title);
+                }
+            } else {
+                CMSUtils::println("CMSBase::set_field_instrument(): Cannot find key %s in data array", $field_name);
+            }
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Retrieve the CMS Instruments from a node
+     *
+     * @param stdClass $node Drupal publicatio node
+     * @return array Array of strings with instrument names
+     * @todo Write tests
+     */
+    static function get_field_instruments($node, $field_name) {
+        $ret = array();
+        $instruments = CMSUtils::get_node_list_value($node, $field_name, 'target_id');
+        if(!empty($instruments)) {
+            $instrument_cache = CMSLegalInstrument::cms_instruments_by_id();
+            foreach($instruments as $id) {
+                if(array_key_exists($id, $instrument_cache)) {
+                    $ret[] = $instrument_cache[$id];
+                } else {
+                    CMSUtils::println("CMSBase::get_instruments(): Instrument with id: %d does not exist!", $id);
+                }
+            }
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Retrieve the CMS Instrument names from a node
+     *
+     * @param stdClass $node Drupal publicatio node
+     * @param string $field_name Name of the object's field
+     * @return array Array of strings with instrument names
+     * @todo Write tests
+     */
+    static function get_field_instruments_names($node, $field_name) {
+        $instruments = self::get_field_instruments($node, $field_name);
+        $ret = array();
+        foreach($instruments as $ob) {
+            $ret[] = $ob->title;
+        }
+        return $ret;
+    }
+
+
+    static function set_field_instruments($node, $field_name, $data, $instrument_cache = array()) {
+        if(!empty($data[$field_name])) {
+            $ids = array();
+            if(empty($instrument_cache)) {
+                $instrument_cache = CMSLegalInstrument::get_mapped_instruments(TRUE);
+            }
+            foreach($data[$field_name] as $title) {
+                if(array_key_exists($title, $instrument_cache)) {
+                    $instrument = $instrument_cache[$title];
+                    $ids[] = $instrument;
+                } else {
+                    CMSUtils::println("CMSBase::get_instruments(): Instrument with title '%s' does not exist!", $title);
+                }
+            }
+            $ret[] = self::set_field_list_value($node, $field_name, array($field_name => $ids), 'target_id');
+        }
+    }
+
+
+    /**
+     * Retrieve node's body element
+     *
+     * @param object $node Node object
+     * @param array Set the 'body' value in the output array directly
+     * @return array array with keys 'value', 'format' and 'summary'
+     */
+    static function get_field_body($node, &$out = NULL) {
+        $ret = array('value' => '', 'format' => '', 'summary' => '');
+        if(!empty($node->body[$node->language][0]['value'])) {
+            $ret['value'] = $node->body[$node->language][0]['value'];
+        }
+        if(!empty($node->body[$node->language][0]['format'])) {
+            $ret['format'] = $node->body[$node->language][0]['format'];
+        }
+        if(!empty($node->body[$node->language][0]['summary'])) {
+            $ret['summary'] = $node->body[$node->language][0]['summary'];
+        }
+        if($out !== NULL) {
+            $out['body'] = $ret;
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Set the node's body element
+     *
+     * @param stdClass $node Node object
+     * @param array $data Array with keys: 'value', 'format' and 'summary'
+     */
+    static function set_field_body(&$node, $data) {
+        $node->body[$node->language][0]['value'] = '';
+        if(!empty($data['body'])) {
+            $body = $data['body'];
+            if(!empty($body['value'])) {
+                $node->body[$node->language][0]['value'] = $body['value'];
+            }
+            if(!empty($body['format'])) {
+                $node->body[$node->language][0]['format'] = $body['format'];
+            }
+            if(!empty($body['summary'])) {
+                $node->body[$node->language][0]['summary'] = $body['summary'];
+            }
+        }
+    }
+
+
+    /**
+     * Retrieve node boolean field value
+     * @param object $node Drupal node
+     * @param string $field_name Name of the field
+     * @param array $out Associative array where this value is also set
+     * @return boolean Value
+     */
+    static function get_field_boolean($node, $field_name, &$out = NULL) {
+        $v = CMSUtils::get_node_simple_value($node, $field_name);
+        $v = ($v == TRUE) ? TRUE : FALSE;
+        if($out !== NULL) {
+            $out[$field_name] = $v;
+        }
+        return $v;
+    }
+
+
+    /**
+     * Set node field of type boolean
+     * @param stdClass $node Drupal node
+     * @param string $field_name Name of the field
+     */
+    static function set_field_boolean(&$node, $field_name, $data) {
+        $v = isset($data[$field_name]) && $data[$field_name] == TRUE ? TRUE : NULL;
+        self::set_field_single_value($node, $field_name, array($field_name => $v));
+    }
+
+
+    /**
+     * Set Drupal node's 'value' field
+     * @param stdClass|object $node Drupal node
+     * @param array $field_name Drupal field name
+     * @param array $out Associative array where this value is also set
+     *
+     * @return string Returns Actual value or NULL
+     */
+    static function get_field_single_value($node, $field_name, &$out = NULL) {
+        $ret = NULL;
+        $langcode = CMSUtils::get_default_language($node);
+        if(!empty($node->{$field_name}[$langcode][0]['value'])) {
+            $ret = $node->{$field_name}[$langcode][0]['value'];
+        }
+        if($out !== NULL) {
+            $out[$field_name] = $ret;
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Set a simple value to a Drupal node, with multilanguage
+     *
+     * $node->$field[$langcode][0][$property] = $v;
+     *
+     * @param object $node Drupal node
+     * @param string $field_name Nodes' field name
+     * @param mixed $data Associative array holding the data. Must contain key $field_name
+     * @param string $property Property to set to the nodes' value. Default 'value'
+     */
+    static function set_field_single_value(&$node, $field_name, $data, $property = 'value') {
+        if(!empty($node) && !empty($data[$field_name])) {
+            $v = $data[$field_name];
+            $langcode = CMSUtils::get_default_language($node);
+            $node->{$field_name} = array($langcode => array(0 => array($property => $v)));
+        }
+    }
+
+
+    /**
+     * Retrieve the multi-valued field from a Drupal node. "value" attribute of field
+     * @param stdClass $node Node object
+     * @param string $field_name Name of the field to get data from
+     * @param array $out Associative array where this value is also set
+     *
+     * @return array Array of values
+     */
+    static function get_field_list_value($node, $field_name, &$out = NULL) {
+        $ret = array();
+        $langcode = CMSUtils::get_default_language($node);
+        if(isset($node->{$field_name}) && !empty($node->{$field_name}[$langcode]) && is_array($node->{$field_name}[$langcode])) {
+            foreach($node->{$field_name}[$langcode] as $value) {
+                $ret[] = $value['value'];
+            }
+        }
+        if($out !== NULL) {
+            $out[$field_name] = $ret;
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Set a list of values to a Drupal node, with multilanguage
+     *
+     * $node->$field[$langcode] = array(array($property => $values[0]) ...);
+     *
+     * @param object $node Drupal node
+     * @param string $field_name Nodes' field name
+     * @param mixed $data Associative array holding the data. Must contain key $field_name
+     * @param string $property Property to set to the nodes' value. Default 'value'
+     */
+    static function set_field_list_value(&$node, $field_name, $data, $property = 'value') {
+        if(!empty($node) && !empty($data[$field_name])) {
+            $v = array();
+            foreach($data[$field_name] as $value) {
+                $v[] = array($property => $value);
+            }
+            $langcode = CMSUtils::get_default_language($node);
+            $node->{$field_name} = array($langcode => $v);
+        }
+    }
+
+
+    /**
+     * Retrieve single or multi-valued field collection from node
+     * @param object $node Source node
+     * @param string $field_name Field name
+     * @return array Associative array [id => stdClass]
+     */
+    static function get_field_collection_items($node, $field_name) {
+        $ret = array();
+        if(!empty($node->{$field_name}[$node->language])) {
+            $ids = array();
+            foreach($node->{$field_name}[$node->language] as $ref) {
+                $ids[] = $ref['value'];
+            }
+            $ret = entity_load('field_collection_item', $ids);
+        }
+        return $ret;
+    }
+
+
+    static function set_field_country($node, $field_name, $data) {
+        if(!empty($node) && !empty($data[$field_name])) {
+            $langcode = CMSUtils::get_default_language($node);
+            $country = Country::get_by_name_or_iso2($data[$field_name]);
+            if(!empty($country)) {
+                $node->{$field_name}[$langcode][0]['target_id'] = $country->nid;
+            } else {
+                CMSUtils::println('CMSBase::set_field_country(): Cannot identify country %s', $data[$field_name]);
+            }
+        }
+    }
+
+
+    /**
+     * Extract country ISO 3166-2 code from Drupal node entity reference to Country content type
+     *
+     * @param stdClass $node Drupal node
+     * @param string $field_name Field name
+     * @return string|boolean Code or FALSE
+     */
+    static function get_field_country_code($node, $field_name) {
+        $id = self::get_field_single_target_id($node, $field_name);
+        if(!empty($id)) {
+            $row = node_load($id);
+            if(!empty($row)) {
+                return self::get_field_single_value($row, 'field_country_iso2');
+            }
+        }
+        return FALSE;
+    }
+
+
+    static function set_field_countries($node, $field_name, $data) {
+        if(!empty($node) && !empty($data[$field_name])) {
+            $v = array();
+            foreach($data[$field_name] as $value) {
+                $country = Country::get_by_name_or_iso2($value);
+                if(!empty($country)) {
+                    $v[] = array('target_id' => $country->nid);
+                } else {
+                    CMSUtils::println('Cannot identify country %s', $value);
+                }
+            }
+            $langcode = CMSUtils::get_default_language($node);
+            $node->{$field_name} = array($langcode => $v);
+        }
+    }
+
+
+    /**
+     * Extract country ISO 3166-2 codes from Drupal node entity reference to Country content type
+     *
+     * @param stdClass $node Drupal node
+     * @param string $field_name Field name
+     * @return array Array of ISO2L codes
+     */
+    static function get_field_countries_codes($node, $field_name) {
+        $ret = array();
+        $ids = self::get_field_list_target_id($node, $field_name);
+        foreach($ids as $id) {
+            $row = node_load($id);
+            if($row) {
+                $ret[] = self::get_field_single_value($row, 'field_country_iso2');
+            }
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Set Drupal node's 'target_id' field
+     * @param stdClass $node Drupal node
+     * @param string $field_name Drupal field name
+     * @param array $out Associative array where this value is also set
+     *
+     * @return stdClass Actual value or NULL
+     */
+    static function get_field_single_target_id($node, $field_name, &$out = NULL) {
+        $ret = NULL;
+        $langcode = CMSUtils::get_default_language($node);
+        if(!empty($node->{$field_name}[$langcode][0]['target_id'])) {
+            $ret = $node->{$field_name}[$langcode][0]['target_id'];
+        }
+        if($out !== NULL) {
+            $out[$field_name] = $ret;
+        }
+        return $ret;
+    }
+
+
+    static function set_field_single_target_id($node, $field_name, $data) {
+        if(!empty($node) && !empty($data[$field_name])) {
+            $langcode = CMSUtils::get_default_language($node);
+            $node->{$field_name}[$langcode][0]['target_id'] = $data[$field_name];
+        }
+    }
+
+
+    /**
+     * Retrieve the multi-valued field from a Drupal node. "target_id" attribute of field
+     * @param stdClass $node Node object
+     * @param string $field_name Name of the field to get data from
+     * @param array $out Associative array where this value is also set
+     *
+     * @return array Array of values
+     */
+    static function get_field_list_target_id($node, $field_name, &$out = NULL) {
+        $ret = array();
+        $langcode = CMSUtils::get_default_language($node);
+        if(!empty($node->{$field_name}[$langcode]) && is_array($node->{$field_name}[$langcode])) {
+            foreach($node->{$field_name}[$langcode] as $value) {
+                $ret[] = $value['target_id'];
+            }
+        }
+        if($out !== NULL) {
+            $out[$field_name] = $ret;
+        }
+        return $ret;
+    }
+
+
+    static function set_field_list_target_id(&$node, $field_name, $data) {
+        if(!empty($node) && !empty($data[$field_name])) {
+            $v = array();
+            foreach($data[$field_name] as $value) {
+                $v[] = array('target_id' => $value);
+            }
+            $langcode = CMSUtils::get_default_language($node);
+            $node->{$field_name} = array($langcode => $v);
+        }
+    }
+
+
+    /**
+     * Export the files from a node, including its optional 'Description' field
+     * @param stdClass $node Drupal node
+     * @param string $field_name Name of the Drupal field
+     * @param string $dest_dir Path to the export directory on disk
+     * @return array Array containing exported items as array, i.e. (array('path' => 'field/test.pdf', 'description' => file description'), ...)
+     */
+    static function export_field_files($node, $field_name, $dest_dir) {
+        $ret = array();
+        if(empty($node->{$field_name}[$node->language])) {
+            return $ret;
+        }
+        $slug = CMSUtils::slug($node->title);
+        $rel_path = $node->type . DIRECTORY_SEPARATOR . $slug . DIRECTORY_SEPARATOR .  $field_name;
+        $pub_dir = $dest_dir . DIRECTORY_SEPARATOR . $rel_path;
+        CMSUtils::mkdir($pub_dir);
+        if(is_writable($pub_dir)) {
+            foreach($node->{$field_name}[$node->language] as $file) {
+                $filename = $file['filename'];
+                $dest = $pub_dir . DIRECTORY_SEPARATOR . $filename;
+                $f = file_stream_wrapper_get_instance_by_uri($file['uri']);
+                copy($f->realpath(), $dest);
+                $arr = array(
+                    'path' => $rel_path . DIRECTORY_SEPARATOR . $filename,
+                    'description' => !empty($file['description']) ? $file['description'] : '',
+                    'md5' => md5_file($dest)
+                );
+                if(!empty($file['title'])) { // For images
+                    $arr['title'] = $file['title'];
+                }
+                $ret[] = $arr;
+            }
+        } else {
+            CMSUtils::println("CMSBase::export_field_files(): Invalid export directory %s", $pub_dir);
+        }
+        return $ret;
+    }
+
+
+    /**
+     * Import files into Drupal FileField (with optional Description)
+     * @param stdClass $node Drupal node
+     * @param string $field_name Name of the Drupal field
+     * @param array $data Array containing a key $field_name with file info: array('path' => '', 'description' => '', 'md5')
+     * @param string $bundle Name of the field instance bundle - where this field resides (in CMS is module name, i.e. 'project', 'meeting' etc.)
+     * @param string $path_prefix Prefix for the path where files are found ($path_prefix + $data['path'] => absolute path)
+     * @param string $entity_type Name of the entity type for this field. Default to 'node', can be 'user' etc.
+     */
+    static function import_field_files(&$node, $field_name, $data, $bundle, $path_prefix = '', $entity_type = 'node') {
+        global $user;
+        if(empty($data[$field_name])) {
+            return;
+        }
+        $instance = field_info_instance($entity_type, $field_name, $bundle);
+        if(empty($instance)) {
+            CMSUtils::println("CMSBase::import_field_files(): Cannot determine field_info_instance on (entity_type=%s, field_name=%s, bundle=%s)", $entity_type, $field_name, $bundle);
+            return;
+        }
+        $field = field_info_field($field_name);
+        if(empty($field)) {
+            CMSUtils::println("CMSBase::import_field_files(): Cannot determine field_info_field on (field_name=%s)", $field_name);
+            return;
+        }
+        $storage = sprintf('%s://', $field['settings']['uri_scheme']);
+        $destination_absolute_path = drupal_realpath($storage) . DIRECTORY_SEPARATOR . $instance['settings']['file_directory'];
+        CMSUtils::mkdir($destination_absolute_path);
+        if(!is_writable($destination_absolute_path)) {
+            CMSUtils::println("CMSBase::import_field_files(): Cannot write to target directory %s", $destination_absolute_path);
+            return;
+        }
+        $dest_path = $storage . DIRECTORY_SEPARATOR . $instance['settings']['file_directory'];
+
+        $uid = isset($user->uid) ? $user->uid : 1;
+        if(!isset($node->{$field_name}[$node->language])) {
+            $node->{$field_name}[$node->language] = array();
+        }
+        foreach($data[$field_name] as $attachment) {
+            if(empty($attachment['path'])) {
+                CMSUtils::println('Missing "path" from file information! %s', print_r($attachment, TRUE));
+            }
+            $path = $path_prefix . DIRECTORY_SEPARATOR . $attachment['path'];
+            if(!is_readable($path)) {
+                CMSUtils::println("CMSBase::import_field_files(): Skipping invalid file: %s", $path);
+                continue;
+            }
+            if(!empty($attachment['md5'])) {
+                $real_md5 = md5_file($path);
+                // CMSUtils::println("%s:%s:%s", $path, $attachment['md5'], $real_md5);
+                if($attachment['md5'] !== $real_md5) {
+                    CMSUtils::println("CMSBase::import_field_files(): WARNING! Changed file, MD5 differs (%s != %s)", $attachment['md5'], $real_md5);
+                }
+            }
+            $src = (object) array('uid' => $uid, 'uri' => $path, 'filemime' => file_get_mimetype($path), 'status' => FILE_STATUS_PERMANENT);
+            $file = file_copy($src, $dest_path);
+            if(!empty($file)) {
+                $file->display = 1;
+                if(!empty($attachment['description'])) {
+                    $file->description = $attachment['description'];
+                }
+                if(!empty($attachment['title'])) {
+                        $file->title = $attachment['title'];
+                }
+                $node->{$field_name}[$node->language][] = (array)$file;
+            } else {
+                CMSUtils::println("CMSBase::import_field_files(): Could not upload attached file to Drupal public:// storage: %s", $path);
+            }
+        }
+    }
+
+    /**
+     * Import files into FieldCollection with Drupal FileField (with optional Description)
+     * @param array entity field collection
+     * @param string $host_field Name of the Drupal field
+     * @param string $field_name Name of the Drupal Filefield
+     * @param array $file_document Array containing a key $field_name with file info: array('path' => '', 'description' => '', 'md5')
+     * @param string $bundle Name of the field instance bundle - where this field resides (in CMS is module name, i.e. 'project', 'meeting' etc.)
+     * @param string $path_prefix Prefix for the path where files are found ($path_prefix + $data['path'] => absolute path)
+     * @param string $entity_type Name of the entity type for this field. Default to 'node', can be 'user' etc.
+     * @param string $language node language.
+     */
+    static function import_field_collection_files(&$entity, $host_field, $field_name, $file_document, $bundle, $path_prefix = '', $entity_type = 'node', $language = 'und') {
+        global $user;
+        if(empty($file_document)) {
+            return;
+        }
+        $instances = field_info_instances('field_collection_item', $host_field);
+        if (isset($instances[$field_name])) {
+            $instance = $instances[$field_name];
+        }
+
+        if(empty($instance)) {
+            CMSUtils::println("CMSBase::import_field_collection_files(): Cannot determine field_info_instance on (entity_type=%s, field_name=%s, bundle=%s)", $entity_type, $field_name, $bundle);
+            return;
+        }
+
+        $field = field_info_field($field_name);
+        if(empty($field)) {
+            CMSUtils::println("CMSBase::import_field_collection_files(): Cannot determine field_info_field on (field_name=%s)", $field_name);
+            return;
+        }
+        $storage = sprintf('%s://', $field['settings']['uri_scheme']);
+        $destination_absolute_path = drupal_realpath($storage) . DIRECTORY_SEPARATOR . $instance['settings']['file_directory'];
+        CMSUtils::mkdir($destination_absolute_path);
+        if(!is_writable($destination_absolute_path)) {
+            CMSUtils::println("CMSBase::import_field_collection_files(): Cannot write to target directory %s", $destination_absolute_path);
+            return;
+        }
+        $dest_path = $storage . DIRECTORY_SEPARATOR . $instance['settings']['file_directory'];
+
+        $uid = isset($user->uid) ? $user->uid : 1;
+        if(!isset($entity[$field_name][$language])) {
+            $entity[$field_name][$language] = array();
+        }
+
+        $path = $path_prefix . DIRECTORY_SEPARATOR . $file_document[$field_name];
+        if(!is_readable($path)) {
+            CMSUtils::println("CMSBase::import_field_collection_files(): ERROR: Cannot read file: %s", $path);
+            return;
+        }
+        if(!empty($file_document['md5'])) {
+            $real_md5 = md5_file($path);
+            // CMSUtils::println("%s:%s:%s", $path, $attachment['md5'], $real_md5);
+            if($file_document['md5'] !== $real_md5) {
+                CMSUtils::println("CMSBase::import_field_collection_files(): WARNING! Changed file, MD5 differs (%s != %s)", $file_document['md5'], $real_md5);
+            }
+        }
+        $src = (object) array('uid' => $uid, 'uri' => $path, 'filemime' => file_get_mimetype($path), 'status' => FILE_STATUS_PERMANENT);
+        $file = file_copy($src, $dest_path);
+
+        if(!empty($file)) {
+            $file->display = 1;
+            if(!empty($file_document['description'])) {
+                $file->description = $file_document['description'];
+            }
+            if(!empty($file_document['title'])) {
+                    $file->title = $file_document['title'];
+            }
+            $entity[$field_name][$language][] = (array)$file;
+        } else {
+            CMSUtils::println("CMSBase::import_field_collection_files(): Could not upload attached file to Drupal public:// storage: %s", $path);
+        }
+    }
+
+    /**
+     * Given a list of UUIDs set references between different nodes
+     *
+     * @param   stdClass   $node
+     * @param   string     $field_name
+     * @param   array      $data
+    */
+    static function set_entity_reference_by_uuid(&$node, $field_name, $data) {
+        if ((!isset($data[$field_name])) || (empty($data[$field_name]))) {
+            return;
+        }
+        $ids = array();
+        if(!is_array($data[$field_name])) {
+            CMSUtils::println("data[%s] is not an array! Malformed JSON", $field_name);
+        }
+        $entities = entity_uuid_load('node', $data[$field_name]);
+        if ($entities) {
+            $ids = array_keys($entities);
+        }
+
+        self::set_field_list_target_id($node, $field_name, array($field_name => $ids));
+    }
+
+    /**
+     * Given a list of UUIDs set single reference between different nodes
+     *
+     * @param   stdClass   $node
+     * @param   string     $field_name
+     * @param   array      $data
+    */
+    static function set_single_entity_reference_by_uuid(&$node, $field_name, $data) {
+        if ((!isset($data[$field_name])) || (empty($data[$field_name]))) {
+            return;
+        }
+        $entities = entity_uuid_load('node', array($data[$field_name]));
+        $nid = '';
+        if ($entities) {
+            $nid = key($entities);
+        }
+
+        self::set_field_single_target_id($node, $field_name, array($field_name => $nid));
+    }
+
+    static function get_entity_reference_by_uuid($node, $field_name) {
+        $nids = self::get_field_list_target_id($node, $field_name);
+        $entities = node_load_multiple($nids);
+        $entities_uids = array();
+        foreach ($entities as $index => $entity) {
+            if (property_exists($entity, 'uuid') && (!empty($entity->uuid))) {
+                array_push($entities_uids, $entity->uuid);
+            }
+        }
+
+        return $entities_uids;
+    }
+
+    static function get_single_entity_reference_by_uuid($node, $field_name) {
+        $nid = self::get_field_single_target_id($node, $field_name);
+        $entity = node_load($nid);
+        $uuid = '';
+        if ($entity && property_exists($entity, 'uuid') && (!empty($entity->uuid))) {
+            $uuid = $entity->uuid;
+        }
+
+        return $uuid;
+    }
+
+    /**
+     * Set relation between content types
+     *
+     * @param   integer   $nid   Node ID for which to set the new value
+     * @param   integer   $rnid  Related Node ID
+    */
+    public static function set_content_relation($nid, $rnid, $field, $related_field) {
+        $node = node_load($nid);
+        $rnode = node_load($rnid);
+
+        $content_field = "field_" . $field . "_" . $related_field;
+
+        if ($node && $rnode) {
+            if (property_exists($node, $content_field)) {
+                $items = array();
+                $ids = array();
+
+                if (is_array($node->{$content_field}) && array_key_exists($node->language, $node->{$content_field})) {
+                    $items = $node->{$content_field}[$node->language];
+                }
+
+                if ($items) {
+                    foreach ($items as $item) {
+                        $ids[] = $item['target_id'];
+                    }
+                }
+
+                if (!in_array($rnid, $ids)) {
+                    $node->{$content_field}[$node->language][count($items)]['target_id'] = $rnid;
+                    $node->content_relation = FALSE;
+                    node_save($node);
+                }
+            }
+        }
+    }
+
+    /**
+     * Link node of a specific type with different types
+     *
+     * @param   object   $node
+     * @param   array    $fields
+     * @param   string   $bundle
+    */
+    public static function update_content_relation($node, $fields = array(), $bundle = array(), $false_fields = array()) {
+        foreach ($fields as $related_content => $field) {
+            if (!empty($node->{$field}) && isset($node->{$field}[$node->language])) {
+                $related_ids = $node->{$field}[$node->language];
+
+                foreach ($related_ids as $key => $value) {
+                    $nid = $value['target_id'];
+                    self::set_content_relation($nid, $node->nid, $related_content, $bundle);
+                }
+            }
+        }
+
+        if (!empty($false_fields)) {
+            foreach($false_fields as $field => $related_content) {
+                if (property_exists($node, $field)) {
+                    $related_ids = $node->{$field}[$node->language];
+                    foreach ($related_ids as $key => $value) {
+                        $nid = $value['target_id'];
+                        self::set_content_relation($nid, $node->nid, $related_content, $bundle);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Create an associative array with UUID as key and node title as value
+     *
+     * @param   string   $content_type
+     *
+     * @return  array    $ret
+    */
+    public static function get_mapped_content($content_type) {
+        $ret = array();
+        $nodes = node_load_multiple(array(), array('type' => $content_type));
+        foreach($nodes as $node) {
+            $ret[$node->uuid] = $node->title;
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Retrieve relation which have target content type set to a specified value
+     * @param $nid integer Node ID to filter by
+     * @param $bundle string Content Type to retrieve
+     * @param $field string Field on which to query for $nid
+     *
+     * @return mixed Array of project nodes
+     */
+    public static function get_relation_for_content_type($id_country, $bundle, $field) {
+        $ret = array();
+        if(!is_numeric($id_country)) {
+            watchdog('project', 'get_projects_for_country - parameter is not an integer, returning empty result');
+            return $ret;
+        }
+        $query = new EntityFieldQuery();
+        $query = $query
+            ->entityCondition('entity_type', 'node')
+            ->propertyCondition('type', 'project')
+            ->propertyCondition('status', NODE_PUBLISHED)
+            ->fieldCondition('field_project_instrument', 'target_id', $id_country, '=')
+            ->execute();
+        if(!empty($query['node'])) {
+            $ret = node_load_multiple(array_keys($query['node']));
+        }
+        return $ret;
+    }
+
+    /**
+     * Set taxonomic fields for a specified node
+     *
+     * @param   stdClass   $node
+     * @param   array      $taxonomic_fields
+     * @param   array      $data
+    */
+    public static function set_content_taxonomic_fields(&$node, $taxonomic_fields, $data) {
+        foreach ($taxonomic_fields as $field) {
+            if (!empty($data[$field['field_name']])) {
+                if (is_array($data[$field['field_name']])) {
+                    self::set_field_taxonomic_terms($node, $field['field_name'], $field['vocabulary'], $data);
+                }else {
+                    self::set_field_taxonomic_term($node, $field['field_name'], $field['vocabulary'], $data);
+                }
+            }
+        }
+    }
+}
