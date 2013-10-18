@@ -21,7 +21,6 @@ dependencies[] = entityreference
 dependencies[] = features
 dependencies[] = field_ui
 dependencies[] = file
-dependencies[] = front_page
 dependencies[] = help
 dependencies[] = i18n
 dependencies[] = i18n_node
