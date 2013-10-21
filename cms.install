@@ -29,16 +29,6 @@ function cms_install() {
             )
     );
 
-    $variables = array(
-        "date_default_timezone" => "Europe/Bucharest",
-        "configurable_timezones" => "0",
-        "user_default_timezone" => "0",
-        "date_first_day" => "1",
-        "date_api_use_iso8601" => "0",
-    );
-    foreach ($variables as $k => $v) {
-        drush_variable_set($k, $v);
-    }
     $items = menu_tree_all_data('main-menu');
     foreach ($items as $item) {
         if ($item['link']['link_path'] == '<front>') {
