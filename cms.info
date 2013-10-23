@@ -1,5 +1,5 @@
 name = CMS Modules
-description = Enable CMS functionalities, main module
+description = Introduces custom modules for CMS along with custom functionalities
 core = 7.x
 package = CMS
 php = 5.2.4
