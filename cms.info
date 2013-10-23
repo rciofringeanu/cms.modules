@@ -4,7 +4,7 @@ core = 7.x
 package = CMS
 php = 5.2.4
 version = 7.x-2.0-alpha2
-project = cms
+
 dependencies[] = block
 dependencies[] = color
 dependencies[] = comment
