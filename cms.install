@@ -29,15 +29,6 @@ function cms_install() {
             )
     );
 
-    $items = menu_tree_all_data('main-menu');
-    foreach ($items as $item) {
-        if ($item['link']['link_path'] == '<front>') {
-            echo "Deleting Home link from main-menu ... \n";
-            $mlid = $item['link']['mlid'];
-            menu_link_delete($mlid);
-        }
-    }
-
     // Create common vocabularies
     CMSBase::vocabulary_create(ucfirst(VOC_CURRENCY), VOC_CURRENCY);
     CMSBase::vocabulary_create(ucfirst(VOC_REGION), VOC_REGION);

@@ -22,7 +22,6 @@ dependencies[] = file
 dependencies[] = help
 dependencies[] = image
 dependencies[] = list
-dependencies[] = menu
 dependencies[] = module_filter
 dependencies[] = number
 dependencies[] = options
