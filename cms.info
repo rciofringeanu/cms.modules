@@ -1,4 +1,4 @@
-name = CMS Modules
+name = CMS Contrib Modules
 description = Introduces custom modules for CMS along with custom functionalities
 core = 7.x
 package = CMS
