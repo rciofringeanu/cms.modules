@@ -1,16 +1,16 @@
 <?php
 
-require_once(dirname(__FILE__) . '/cms.features.inc');
-require_once(dirname(__FILE__) . '/formatters.inc');
+module_load_include('inc', 'cms', 'cms.features');
+module_load_include('inc', 'cms', 'formatters');
 
 /**
  * Path where the administration templates will be mapped
-*/
-define('ADMINISTRATION_PATH', 'manage');
+ */
+define('ADMINISTRATION_PATH', 'manage/');
 
 /**
  * General purpose vocabularies
-*/
+ */
 define('VOC_REGION', 'region');
 define('VOC_CURRENCY', 'currency');
 define('VOC_LANGUAGES', 'languages');
@@ -18,7 +18,7 @@ define('VOC_UN_LANGUAGES', 'un_languages'); # Official UN languages
 
 /**
  * Implement hook_menu();
-*/
+ */
 function cms_menu(){
     $items['node/%node/unpublish'] = array(
         'title' => 'Delete',
@@ -30,10 +30,14 @@ function cms_menu(){
         'type' => MENU_LOCAL_TASK,
         'context' => MENU_CONTEXT_INLINE,
     );
-      return $items;
+    return $items;
 }
 
 /**
+ * Implement hook_node_insert();
+ *
+ * Create node aliases for CMS Databases interface
+ *
  * @param   stdClass   $node
  */
 function cms_node_insert($node) {
@@ -43,7 +47,7 @@ function cms_node_insert($node) {
     $form_state = array(
         "values" => array(
             "source" => "node/" . $node->nid,
-            "alias" => "manage/node/" . $node->nid,
+            "alias" => ADMINISTRATION_PATH , "node/" . $node->nid,
         ),
     );
 
@@ -80,7 +84,7 @@ function cms_node_unpublish_confirm($form, &$form_state, $node) {
 
 /**
  * Implement hook_form_alter();
-*/
+ */
 function cms_form_alter(&$form, &$form_state, $form_id) {
     //dsm($form);
     //dsm($form_state);
@@ -872,7 +876,7 @@ class CMSBase {
                     $file->description = $attachment['description'];
                 }
                 if(!empty($attachment['title'])) {
-                        $file->title = $attachment['title'];
+                    $file->title = $attachment['title'];
                 }
                 $node->{$field_name}[$node->language][] = (array)$file;
             } else {
@@ -947,7 +951,7 @@ class CMSBase {
                 $file->description = $file_document['description'];
             }
             if(!empty($file_document['title'])) {
-                    $file->title = $file_document['title'];
+                $file->title = $file_document['title'];
             }
             $entity[$field_name][$language][] = (array)$file;
         } else {
@@ -961,7 +965,7 @@ class CMSBase {
      * @param   stdClass   $node
      * @param   string     $field_name
      * @param   array      $data
-    */
+     */
     static function set_entity_reference_by_uuid(&$node, $field_name, $data) {
         if ((!isset($data[$field_name])) || (empty($data[$field_name]))) {
             return;
@@ -984,7 +988,7 @@ class CMSBase {
      * @param   stdClass   $node
      * @param   string     $field_name
      * @param   array      $data
-    */
+     */
     static function set_single_entity_reference_by_uuid(&$node, $field_name, $data) {
         if ((!isset($data[$field_name])) || (empty($data[$field_name]))) {
             return;
@@ -1027,7 +1031,7 @@ class CMSBase {
      *
      * @param   integer   $nid   Node ID for which to set the new value
      * @param   integer   $rnid  Related Node ID
-    */
+     */
     public static function set_content_relation($nid, $rnid, $field, $related_field) {
         $node = node_load($nid);
         $rnode = node_load($rnid);
@@ -1064,7 +1068,7 @@ class CMSBase {
      * @param   object   $node
      * @param   array    $fields
      * @param   string   $bundle
-    */
+     */
     public static function update_content_relation($node, $fields = array(), $bundle = array(), $false_fields = array()) {
         foreach ($fields as $related_content => $field) {
             if (!empty($node->{$field}) && isset($node->{$field}[$node->language])) {
@@ -1096,7 +1100,7 @@ class CMSBase {
      * @param   string   $content_type
      *
      * @return  array    $ret
-    */
+     */
     public static function get_mapped_content($content_type) {
         $ret = array();
         $nodes = node_load_multiple(array(), array('type' => $content_type));
@@ -1140,7 +1144,7 @@ class CMSBase {
      * @param   stdClass   $node
      * @param   array      $taxonomic_fields
      * @param   array      $data
-    */
+     */
     public static function set_content_taxonomic_fields(&$node, $taxonomic_fields, $data) {
         foreach ($taxonomic_fields as $field) {
             if (!empty($data[$field['field_name']])) {
