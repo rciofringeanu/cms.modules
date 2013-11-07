@@ -3,11 +3,22 @@
 require_once(dirname(__FILE__) . '/cms.features.inc');
 require_once(dirname(__FILE__) . '/formatters.inc');
 
+/**
+ * Path where the administration templates will be mapped
+*/
+define('ADMINISTRATION_PATH', 'manage');
+
+/**
+ * General purpose vocabularies
+*/
 define('VOC_REGION', 'region');
 define('VOC_CURRENCY', 'currency');
 define('VOC_LANGUAGES', 'languages');
-define('VOC_UN_LANGUAGES', 'un_languages');
+define('VOC_UN_LANGUAGES', 'un_languages'); # Official UN languages
 
+/**
+ * Implement hook_menu();
+*/
 function cms_menu(){
     $items['node/%node/unpublish'] = array(
         'title' => 'Delete',
@@ -22,6 +33,22 @@ function cms_menu(){
       return $items;
 }
 
+/**
+ * @param   stdClass   $node
+ */
+function cms_node_insert($node) {
+    $form_state = array();
+    form_load_include($form_state, 'inc', 'path', 'path.admin');
+
+    $form_state = array(
+        "values" => array(
+            "source" => "node/" . $node->nid,
+            "alias" => "manage/node/" . $node->nid,
+        ),
+    );
+
+    drupal_form_submit('path_admin_form', $form_state);
+}
 
 function cms_node_unpublish_confirm_submit($form, &$form_state){
     $node = node_load($form_state['values']['nid']);
@@ -51,7 +78,9 @@ function cms_node_unpublish_confirm($form, &$form_state, $node) {
     );
 }
 
-
+/**
+ * Implement hook_form_alter();
+*/
 function cms_form_alter(&$form, &$form_state, $form_id) {
     //dsm($form);
     //dsm($form_state);

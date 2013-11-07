@@ -1088,4 +1088,22 @@ final class CMSUtils {
         }
         return $published_content;
     }
+
+    /**
+     * Get related published nodes
+     *
+     * @param     array      $related_array
+     * @return    array      $published_content
+     */
+    static function get_published_nodes($related_array){
+        $published_content = array();
+        foreach($related_array as $related) {
+            $node = node_load($related['target_id']);
+            if ($node && is_object($node) && $node->status == '1') {
+                $published_content[] = $related;
+            }
+        }
+
+        return $published_content;
+    }
 }
