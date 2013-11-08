@@ -6,7 +6,9 @@ module_load_include('inc', 'cms', 'formatters');
 /**
  * Path where the administration templates will be mapped
  */
-define('ADMINISTRATION_PATH', 'manage/');
+if (!defined('ADMINISTRATION_PATH')) {
+    define('ADMINISTRATION_PATH', 'manage/');
+}
 
 /**
  * General purpose vocabularies
