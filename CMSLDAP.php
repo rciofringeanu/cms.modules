@@ -34,15 +34,15 @@ class CMSLDAP {
     public $port;
     public $connected = FALSE;
 
-    public function __construct($config) {
-        $this->base_dn = $config['base_dn'];
-        $this->bind_rdn = $config['bind_rdn'];
-        $this->people_dn = $config['people_dn'];
-        $this->organization_dn = $config['organization_dn'];
-        $this->department_dn = $config['department_dn'];
-        $this->password = $config['password'];
-        $this->address = $config['address'];
-        $this->port = $config['port'];
+    public function __construct() {
+        $this->base_dn = variable_get(LDAP_BASE_DN);
+        $this->bind_rdn = variable_get(LDAP_BIND_RDN);
+        $this->people_dn = variable_get(LDAP_PEOPLE_DN);
+        $this->organization_dn = variable_get(LDAP_ORGANIZATION_DN);
+        $this->department_dn = variable_get(LDAP_DEPARTMENT_DN);
+        $this->password = mcrypt_ecb(MCRYPT_3DES, substr(drupal_get_hash_salt(), 0, 24),variable_get(LDAP_PASSWORD), MCRYPT_DECRYPT);;
+        $this->address = variable_get(LDAP_ADDRESS);
+        $this->port = variable_get(LDAP_PORT);
 
         $this->connect = ldap_connect($this->address, $this->port);
         if ($this->connect) {
@@ -82,7 +82,7 @@ class CMSLDAP {
      *
      * @param string $sortfilter The attribute to use as a key in the sort.
      * @return bool
-    */
+     */
     public function sort($sort_filter) {
         return ldap_sort($this->connect, $this->search_result, $sort_filter);
     }
@@ -95,7 +95,7 @@ class CMSLDAP {
      * @param   array    $attributes
      * @param   array    $attrsonly
      * @return  array
-    */
+     */
     public function search($base_dn, $filter, $attributes = array(), $attrsonly = null) {
         $this->search_result = ldap_search($this->connect, $base_dn, $filter, $attributes, $attrsonly);
         return $this->search_result;
@@ -111,7 +111,7 @@ class CMSLDAP {
      * @param   array    $attrsonly
      * @param   int      $page_size
      * @return  array
-    */
+     */
     public function paged_search($base_dn, $filter, $page = 1, $attributes = array(), $attrsonly = null, $page_size = 10) {
         $results = array();
         $cookie = '';
@@ -162,7 +162,7 @@ class CMSLDAP {
 
     /**
      * Return first entry from an LDAP search result
-    */
+     */
     public function first_entry() {
         $this->entry_identifier = ldap_first_entry($this->connect, $this->search_result);
         return $this->entry_identifier;
@@ -170,7 +170,7 @@ class CMSLDAP {
 
     /**
      * Get the next entry from an LDAP search results
-    */
+     */
     public function next_entry() {
         $this->entry_identifier = ldap_next_entry($this->connect, $this->entry_identifier);
         return $this->entry_identifier;
@@ -185,7 +185,7 @@ class CMSLDAP {
      * Count entries of an LDAP search results
      *
      * @return   int
-    */
+     */
     public function count_entries() {
         $this->count_entries = ldap_count_entries($this->connect, $this->search_result);
         return $this->count_entries;
@@ -195,7 +195,7 @@ class CMSLDAP {
      * Get entries of an LDAP search result resource
      *
      * @return   array
-    */
+     */
     public function get_entries() {
         if (!is_bool($this->search_result) && !is_bool($this->connect)) {
             $this->entries = ldap_get_entries($this->connect, $this->search_result);
@@ -208,7 +208,7 @@ class CMSLDAP {
      * Get all attributes of a specified LDAP entry
      *
      * @return   array
-    */
+     */
     public function get_attributes() {
         $this->attributes = ldap_get_attributes($this->connect, $this->entry_identifier);
         return $this->attributes;
@@ -218,7 +218,7 @@ class CMSLDAP {
      * Get first attribute of a specified LDAP entry
      *
      * @return   string
-    */
+     */
     public function first_attribute() {
         $this->attr = ldap_first_attribute($this->connect, $this->entry_identifier);
         return $this->attr; // string
@@ -228,7 +228,7 @@ class CMSLDAP {
      * Get the next attribute of a specified LDAP entry
      *
      * @return   string
-    */
+     */
     public function next_attribute() {
         $this->attr = ldap_next_attribute($this->connect, $this->entry_identifier);
         return $this->attr; // string
@@ -238,7 +238,7 @@ class CMSLDAP {
      * Get values of a specified attribute from an LDAP entry
      *
      * @return   array
-    */
+     */
     public function get_string_values($attribute) {
         return ldap_get_values($this->connect, $this->entry_identifier, $attribute);
     }
@@ -257,7 +257,7 @@ class CMSLDAP {
      * @param   string   $dn
      * @param   array    $entry
      * @return  bool
-    */
+     */
     public function add($dn, $entry) {
         return ldap_add($this->connect, $dn, $entry);
     }
@@ -268,7 +268,7 @@ class CMSLDAP {
      * @param   string   $group_name
      * @param   array    $group_info
      * @return  bool
-    */
+     */
     public function add_to_group($group_name, $group_info) {
         $group_dn = "cn=$group_name," . $this->people_dn;
         return ldap_mod_add($this->connect, $group_dn, $group_info);
@@ -291,7 +291,7 @@ class CMSLDAP {
      *
      * @param   string   $dn
      * @return  bool
-    */
+     */
     public function delete($dn) {
         return ldap_delete($this->connect, $dn);
     }
@@ -302,7 +302,7 @@ class CMSLDAP {
      * @param   string   $group_name
      * @param   array    $group_info
      * @return  bool
-    */
+     */
     public function delete_from_group($group_name, $group_info) {
         $group_dn = "cn=$group_name," . $this->people_dn;
         return ldap_mod_del($this->connect, $group_dn, $group_info);
@@ -314,7 +314,7 @@ class CMSLDAP {
      * @param   string   $dn
      * @param   array    $values
      * @return  bool
-    */
+     */
     public function edit($dn, $values) {
         $attrs_to_del = array();
         $attrs_to_mod = array();
@@ -348,7 +348,7 @@ class CMSLDAP {
 
     /**
      * Close opened LDAP connection
-    */
+     */
     public function close() {
         if ($this->connect) {
             if ($this->search_result) {
@@ -379,7 +379,7 @@ class CMSLDAP {
      *
      * @param     string     $user_id
      * @return    array
-    */
+     */
     public function search_user($user_id) {
         $this->search($this->people_dn, '(uid=' . $user_id . ')');
         $user_result = $this->get_entries();
@@ -395,7 +395,7 @@ class CMSLDAP {
      *
      * @param     string     $organization_id
      * @return    array
-    */
+     */
     public function search_organization($organization_id) {
         $this->search($this->organization_dn, '(oid=' . $organization_id . ')');
         $organization_result = $this->get_entries();
