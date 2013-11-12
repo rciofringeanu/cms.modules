@@ -19,6 +19,18 @@ define('VOC_LANGUAGES', 'languages');
 define('VOC_UN_LANGUAGES', 'un_languages'); # Official UN languages
 
 /**
+ * Drupal LDAP environment variables names
+ */
+define('LDAP_ADDRESS', 'ldap_address');
+define('LDAP_PORT', 'ldap_port');
+define('LDAP_BIND_RDN', 'ldap_bind_rdn');
+define('LDAP_BASE_DN', 'ldap_base_dn');
+define('LDAP_PEOPLE_DN', 'ldap_people_dn');
+define('LDAP_ORGANIZATION_DN', 'ldap_organization_dn');
+define('LDAP_DEPARTMENT_DN', 'ldap_department_dn');
+define('LDAP_PASSWORD', 'ldap_password');
+
+/**
  * Implement hook_menu();
  */
 function cms_menu(){
