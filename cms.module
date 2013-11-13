@@ -526,6 +526,45 @@ class CMSBase {
 
 
     /**
+     * Get the value of an URL field for a specified node
+     *
+     * @param   stdClass    $node
+     * @param   string      $field_name
+     *
+     * @return  array       $ret
+     */
+    static function get_field_url($node, $field_name){
+        $ret = array();
+        $ret['url'] = (!empty($node->{$field_name}[$node->language][0]['url']))
+            ? $node->{$field_name}[$node->language][0]['url']
+            : "";
+        $ret['title'] = (!empty($node->{$field_name}[$node->language][0]['title']))
+            ? $node->{$field_name}[$node->language][0]['title']
+            : "";
+        return $ret;
+    }
+
+    /**
+     * Set a specified value for a node's URL field
+     *
+     * @param   stdClass    $node
+     * @param   string      $field_name
+     * @param   array       $data
+     */
+    static function set_field_url(&$node, $field_name, $data) {
+        if(isset($data[$field_name])) {
+            $url = $data[$field_name];
+            $node->{$field_name}[$node->language][0]['url'] = (!empty($url['url']))
+                ? $url['url']
+                : "";
+            $node->{$field_name}[$node->language][0]['title'] = (!empty($url['title']))
+                ? $url['title']
+                : "";
+        }
+    }
+
+
+    /**
      * Retrieve node boolean field value
      * @param object $node Drupal node
      * @param string $field_name Name of the field
