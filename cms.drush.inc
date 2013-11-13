@@ -21,6 +21,10 @@ function cms_drush_command() {
         'aliases' => array('sev')
     );
 
+    $items['set_logo'] = array(
+        'description' => 'Set website logo',
+    );
+
     return $items;
 }
 
@@ -31,8 +35,6 @@ function cms_drush_command() {
  *
  * @param   string   $variable_name
  * @param   string   $value_to_encrypt
- *
- *
  */
 function drush_cms_set_encrypted_variable($variable_name, $value_to_encrypt) {
     variable_del($variable_name);
@@ -42,4 +44,35 @@ function drush_cms_set_encrypted_variable($variable_name, $value_to_encrypt) {
 
     variable_set($variable_name, mcrypt_ecb(MCRYPT_3DES, $hash,
         $value_to_encrypt, MCRYPT_ENCRYPT));
+}
+
+/**
+ * Callback function for set_logo drush command
+ *
+ * Upload and set website logo
+*/
+function drush_cms_set_log() {
+    global $theme_key;
+
+    $current_profile = CMSUtils::get_current_profile();
+    $file_path = drupal_get_path('module', 'cms_initial_data') . _DS_ . $current_profile . _DS_ . 'files' . _DS_ . 'logo.png';
+
+    $file_object = (object) array(
+        'uid' => 1,
+        'uri' => $file_path,
+        'filemime' => file_get_mimetype($file_path),
+        'status' => 1,
+    );
+
+    $file = file_copy($file_object, 'public://');
+
+    if ($file) {
+        $file->display = 1;
+        $logo_path = file_create_url($file->uri);
+        $theme_name = 'cms_theme';
+        $var_name = 'theme_' . $theme_key . '_settings';
+        $settings = variable_get($var_name, array());
+        $settings['logo_path'] = $logo_path;
+        variable_set($var_name, $settings);
+    }
 }
