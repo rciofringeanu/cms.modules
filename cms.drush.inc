@@ -51,7 +51,7 @@ function drush_cms_set_encrypted_variable($variable_name, $value_to_encrypt) {
  *
  * Upload and set website logo
 */
-function drush_cms_set_log() {
+function drush_cms_set_logo() {
     global $theme_key;
 
     $current_profile = CMSUtils::get_current_profile();
