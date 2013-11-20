@@ -41,16 +41,20 @@ function drush_cms_set_encrypted_variable($variable_name, $value_to_encrypt) {
 
     // PHP mcrypt_ecb is not accepting strings longer the 25 chars
     $hash = substr(drupal_get_hash_salt(), 0, 24);
+    $cipher = mcrypt_module_open(MCRYPT_BLOWFISH,'','cbc','');
 
-    variable_set($variable_name, mcrypt_ecb(MCRYPT_3DES, $hash,
-        $value_to_encrypt, MCRYPT_ENCRYPT));
+    mcrypt_generic_init($cipher, $hash, IV);
+    $encrypted = mcrypt_generic($cipher, $value_to_encrypt);
+    mcrypt_generic_deinit($cipher);
+
+    variable_set($variable_name, $encrypted);
 }
 
 /**
  * Callback function for set_logo drush command
  *
  * Upload and set website logo
-*/
+ */
 function drush_cms_set_logo() {
     global $theme_key;
 
