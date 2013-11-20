@@ -5,6 +5,9 @@
  *
  * Generic drush commands for CMS websites
  *
+ * @author Bogdan Tanase
+ *         Dragos Dumitrescu
+ *
  * @return   array   $items
  */
 function cms_drush_command() {
@@ -33,6 +36,7 @@ function cms_drush_command() {
         'examples' => array(
             'drush update_meetings_documents_relations cms/meeting/meetings_documents.json' => 'Update the meeting documents relation from file'
         ),
+        'aliases' => array('umdr'),
     );
 
     return $items;
@@ -42,6 +46,8 @@ function cms_drush_command() {
  * Callback function for set_encrypted_variable drush command.
  *
  * Using Drupal hash salt set an encrypted value for a specified variable
+ *
+ * @author  Bogdan Tanase
  *
  * @param   string   $variable_name
  * @param   string   $value_to_encrypt
@@ -64,6 +70,8 @@ function drush_cms_set_encrypted_variable($variable_name, $value_to_encrypt) {
  * Callback function for set_logo drush command
  *
  * Upload and set website logo
+ *
+ * @author   Bogdan Tanase
  */
 function drush_cms_set_logo() {
     global $theme_key;
@@ -91,9 +99,19 @@ function drush_cms_set_logo() {
     }
 }
 
+/**
+ * Callback function for update_meetings_documents_relations;
+ *
+ * Fix relations between meetings and documents
+ *
+ * @author  Dragos Dumitrescu
+ *
+ * @param   string   $file_path
+ *    Path to JSON file where are stored relations between meetings and documents
+*/
 function drush_cms_update_meetings_documents_relations($file_path) {
-        $json = CMSUtils::read_json($file_path, TRUE);
-        $total_meetings = count($json);
+        $JSON = CMSUtils::read_json($file_path, TRUE);
+        $total_meetings = count($JSON);
         CMSUtils::println('Found %s meetings', $total_meetings);
 
         $md_field = 'field_meeting_document';
@@ -101,14 +119,14 @@ function drush_cms_update_meetings_documents_relations($file_path) {
         $total_docs_found = 0;
         $total_docs_added = 0;
 
-        foreach ($json as $idx => $row) {
+        foreach ($JSON as $idx => $row) {
             CMSUtils::println('Checking Meeting: "%s"',$row['title']);
             if (!isset($row['uuid']) || empty($row['uuid'])) {
-                CMSUtils::println('Meeting "%s" has no uuid',$row['title']);
+                CMSUtils::println('Meeting "%s" has no uuid', $row['title']);
                 continue;
             }
             if (!isset($row[$md_field]) || empty($row[$md_field])) {
-                CMSUtils::println('Meeting "%s" has no documents in the import file',$row['title']);
+                CMSUtils::println('Meeting "%s" has no documents in the import file', $row['title']);
                 continue;
             }
             //Get meeting node entity
