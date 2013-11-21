@@ -31,6 +31,19 @@ define('LDAP_DEPARTMENT_DN', 'ldap_department_dn');
 define('LDAP_PASSWORD', 'ldap_password');
 
 /**
+ * Define mcrypt IV value
+ *
+ * Creates an initialization vector (IV) from a random source.
+ * The IV is only meant to give an alternative seed to the encryption routines.
+ * This IV does not need to be secret at all, though it can be desirable.
+ */
+if (!defined('IV')) {
+    $size = mcrypt_get_iv_size(MCRYPT_CAST_256, MCRYPT_MODE_CFB);
+    $IV = mcrypt_create_iv($size, MCRYPT_DEV_RANDOM);
+    define('IV', $IV);
+}
+
+/**
  * Implement hook_menu();
  */
 function cms_menu(){
