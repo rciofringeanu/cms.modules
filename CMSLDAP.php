@@ -41,12 +41,14 @@ class CMSLDAP {
         $this->organization_dn = variable_get(LDAP_ORGANIZATION_DN);
         $this->department_dn = variable_get(LDAP_DEPARTMENT_DN);
 
-        $hash = substr(drupal_get_hash_salt(), 0, 24);
-        $cipher = mcrypt_module_open(MCRYPT_BLOWFISH,'','cbc','');
-        mcrypt_generic_init($cipher, $hash, IV);
-        $decrypted = mdecrypt_generic($cipher, variable_get(LDAP_PASSWORD));
-        mcrypt_generic_deinit($cipher);
-        $this->password = $decrypted;
+        $td = mcrypt_module_open('tripledes', '', 'ecb', '');
+        $key = substr(drupal_get_hash_salt(), 0, 24);
+        mcrypt_generic_init($td, $key, IV);
+        $decrypted_data = mdecrypt_generic($td, variable_get(LDAP_PASSWORD));
+        mcrypt_generic_deinit($td);
+        mcrypt_module_close($td);
+
+        $this->password = $decrypted_data;
 
         $this->address = variable_get(LDAP_ADDRESS);
         $this->port = variable_get(LDAP_PORT);
