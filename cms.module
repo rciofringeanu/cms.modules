@@ -38,8 +38,7 @@ define('LDAP_PASSWORD', 'ldap_password');
  * This IV does not need to be secret at all, though it can be desirable.
  */
 if (!defined('IV')) {
-    $size = mcrypt_get_iv_size(MCRYPT_CAST_256, MCRYPT_MODE_CFB);
-    $IV = mcrypt_create_iv($size, MCRYPT_DEV_RANDOM);
+    $IV = mcrypt_create_iv(8, MCRYPT_DEV_RANDOM);
     define('IV', $IV);
 }
 
