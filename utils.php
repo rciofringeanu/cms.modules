@@ -1106,4 +1106,29 @@ final class CMSUtils {
 
         return $published_content;
     }
+
+    /**
+     * Set HTTP headers for data export
+     *
+     * @param   string   $type
+     *    Accepted values 'text/csv', 'application/vnd.ms-excel'
+     * @param   string   $filename
+     */
+    public static function set_download_http_headers($type = 'text/csv', $filename = 'export.csv') {
+        if (!in_array($type, array('text/csv', 'application/vnd.ms-excel'))) {
+            watchdog('system', ". Unknown donload type $type. Data export aborted.", array(), WATCHDOG_ERROR);
+            return FALSE;
+        }
+
+        drupal_add_http_header('Pragma', 'public');
+        drupal_add_http_header('Expires', 'Mon, 26 Jul 1997 05:00:00 GMT');
+        drupal_add_http_header('Last-Modified', gmdate('D, d M Y H:i:s').' GMT');
+        drupal_add_http_header('Cache-Control', 'cache, must-revalidate, post-check=0, pre-check=0, max-age=0');
+        drupal_add_http_header('Content-Description', 'File transfer');
+        drupal_add_http_header('Content-Type', $type . '; charset=utf-8');
+        drupal_add_http_header('Content-Disposition', 'attachment; filename=' . $filename);
+        drupal_add_http_header('Content-Transfer-Encoding', 'binary');
+
+        return TRUE;
+    }
 }
