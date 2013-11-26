@@ -135,6 +135,141 @@ function cms_date_formats() {
     );
 }
 
+
+
+/**
+ *
+ */
+function get_available_tabs($node = NULL, $content_type = '') {
+    $tabs = array(
+        'current' => array(),
+        'available' => array()
+    );
+    $websites = CMSUtils::get_all_websites();
+    $current_profile = CMSUtils::get_current_profile();
+    $tabs['current'] = $current_profile;
+
+    if ($node != NULL) {
+        switch ($content_type) {
+            case 'species':
+                $instruments = $node->field_species_instruments;
+                if (array_key_exists($node->language, $instruments)) {
+                    foreach ($instruments[$node->language] as $value) {
+                        $ob = field_collection_item_load($value['value']);
+                        $instrument_id = cms_extract_single_value($ob->field_species_instrument, $node->language, 'target_id');
+                        $instrument = strtolower(CMSLegalInstrument::cms_instrument_title_by_id($instrument_id));
+                        if (($instrument != $current_profile) && (in_array($instrument, array_keys($websites)))) {
+                            $tabs['available'][$instrument] = $websites[$instrument];
+                        }
+                    }
+                }
+
+                break;
+            default: break;
+        }
+    }
+
+    return $tabs;
+}
+
+/**
+ * Render a speciefied slot
+ *
+ * @param       $node       object
+ * @param       $name       string
+ * @param       $type       string
+ * @param       $content    array
+ *
+ * @return      string
+ */
+function render_slot($node, $name, $type, $content = array()) {
+    $file = $type . DIRECTORY_SEPARATOR . $name . '.tpl.php';
+    $template_path = drupal_get_path('theme', 'cms_theme') . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
+    echo theme_render_template($template_path, array('node' => $node,
+                                                     'nid' => $node->nid,
+                                                     'content' => $content));
+}
+
+function render_simple_slot($name, $type, $data = array()) {
+    $file = $type . DIRECTORY_SEPARATOR . $name . '.tpl.php';
+    $template_path = drupal_get_path('theme', 'cms_theme') . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
+    echo theme_render_template($template_path, array('data' => $data));
+}
+
+function render_family_tabs($tabs = array(), $type = '', $tabs_id = '', $field = '') {
+    $file = $type . DIRECTORY_SEPARATOR . 'family-tabs.tpl.php';
+    $template_path = drupal_get_path('theme', 'cms_theme') . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
+    echo theme_render_template($template_path, array('tabs' => $tabs,
+                                                     'tabs_id' => $tabs_id,
+                                                     'field' => $field));
+}
+
+function render_tab($title = '', $href = '', $class = '', $field_name = '', $show_counter = FALSE, $content = array()) {
+    $template_path = drupal_get_path('theme', 'cms_theme') . _DS_ . implode(_DS_, array(
+                                                                                       'templates',
+                                                                                       'slots',
+                                                                                       'general',
+                                                                                       'tab.tpl.php'
+                                                                                  ));
+
+    echo theme_render_template($template_path, array(
+                                                    'title' => $title,
+                                                    'class' => $class,
+                                                    'href' => $href,
+                                                    'show_counter' => $show_counter,
+                                                    'field_name' => $field_name,
+                                                    'content' => $content,
+                                               ));
+}
+
+
+
+/**
+ */
+function check_display_field($object) {
+    $ret = FALSE;
+    $args = func_get_args();
+    array_shift($args);
+    foreach($args as $arg) {
+        if (isset($object[$arg]['#items']) && (!empty($object[$arg]['#items']))) {
+            if ((($object[$arg]['#field_type'] == 'field_collection') && (empty($object[$arg]['#items']))) ||
+                (($object[$arg]['#field_type'] == 'date') && ($object[$arg]['#items'][0]['value'] == '1970-01-01T00:00:00')) ||
+                (isset($object[$arg]['#items'][0]['value']) && (($object[$arg]['#items'][0]['value'] == "0")))) {
+                return FALSE;
+            }
+
+            return TRUE;
+        }
+    }
+}
+
+function get_cms_types() {
+    return array('species', 'parties', 'publication', 'legal_instrument', 'countries', 'country', 'listing', 'decision', 'meeting', 'national_plan', 'national_report', 'project', 'document');
+}
+
+function show_add_button() {
+    $type = arg(0);
+    return in_array($type, get_cms_types()) && user_access(sprintf('create %s content', $type));
+}
+
+function is_current_page($menu_item) {
+    if (current_path() == $menu_item['href']) {
+        return true;
+    }
+
+    if ((arg(0) == 'node') && (is_numeric(arg(1)))) {
+        $node = node_load(arg(1));
+        $type = $node->type;
+        $type_slug = CMSUtils::slug($type);
+        $menu_item_slug = CMSUtils::slug(strtolower($menu_item['title']));
+        if (($type_slug == $menu_item_slug) || (($type_slug . 's') == $menu_item_slug)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /**
  * This is the base class that contains code common to all modules.
  * This class contains various utility functions that can be reused in
