@@ -942,7 +942,7 @@ function theme_cms_legal_instruments_formatter($variables) {
         foreach($item['#items'] as $idx => $st) {
             if (array_key_exists('#instance', $item[$idx])) {
                 $is_fieldcollection = FALSE;
-                $ret .= $item[$idx]['#instance']->title;
+                $ret .= '<a href="/node/' . $item[$idx]['#instance']->nid . '">' . $item[$idx]['#instance']->title . '</a>';
                 if($idx < count($item['#items']) - 1) {
                     $ret .= ', ';
                 }
