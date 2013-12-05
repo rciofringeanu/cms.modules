@@ -44,6 +44,31 @@ if (!defined('IV')) {
 }
 
 /**
+ * Implement hook_init();
+ *
+ * Load Chosen library
+*/
+function cms_init() {
+    drupal_add_js(libraries_get_path('chosen') . '/chosen.jquery.min.js');
+    drupal_add_css(libraries_get_path('chosen') . '/chosen.css');
+    drupal_add_js(drupal_get_path('module', 'chosen') . '/chosen.js');
+    drupal_add_js(array(
+       'chosen' => array(
+           'selector' => variable_get('chosen_jquery_selector', 'select:visible'),
+           'minimum_single' => variable_get('chosen_minimum_single', 20),
+           'minimum_multiple' => variable_get('chosen_minimum_multiple', 20),
+           'minimum_width' => variable_get('chosen_minimum_width', 200),
+           'search_contains' => (variable_get('chosen_search_contains', FALSE)) ? TRUE : FALSE,
+           'disable_search' => (variable_get('chosen_disable_search', FALSE)) ? TRUE : FALSE,
+           'disable_search_threshold' => variable_get('chosen_disable_search_threshold', 0),
+           'placeholder_text_multiple' => variable_get('chosen_placeholder_text_multiple', t('Choose some options')),
+           'placeholder_text_single' => variable_get('chosen_placeholder_text_single', t('Choose an option')),
+           'no_results_text' => variable_get('chosen_no_results_text', t('No results match')),
+       ),
+    ), 'setting');
+}
+
+/**
  * Implement hook_menu();
  */
 function cms_menu(){
