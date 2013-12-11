@@ -387,7 +387,7 @@ function template_preprocess_datatables_view(&$vars) {
 function datatables_views_query_alter(&$view, &$query) {
     $field_to_avoid = array('edit_node', 'delete_node');
     if (($view->style_plugin->definition['name'] == 'datatables') && (in_array('sSearch', array_keys($_GET)))) {
-        $string = $_GET['sSearch'];
+        $string = trim($_GET['sSearch']);
         $group = count($query->where) + 1;
 
         if (!empty($string)) {
