@@ -39,6 +39,10 @@ function cms_drush_command() {
         'aliases' => array('umdr'),
     );
 
+    $items['attach_meeting_documents_refs_1586'] = array(
+        'description' => 'Attach meetings to documents (after module breakdown), see #1586'
+    );
+
     return $items;
 }
 
@@ -190,4 +194,53 @@ function drush_cms_update_meetings_documents_relations($file_path) {
         CMSUtils::println('Summary: "%s" Documents added to the meeting from %s found for %s Meetings ', $total_docs_added, $total_docs_found, $total_meetings);
     }
     return;
+}
+
+
+/**
+ * This drush command reads the cms_initial_data/cms/document/meeting_documents.json
+ * and attaches the missing resolutions and other documents to the meettings. For CMS
+ */
+function drush_cms_attach_meeting_documents_refs_1586() {
+    $f = drupal_get_path('module', 'cms_initial_data') . '/' . CMSUtils::get_current_profile() . '/document/meeting_documents.json';
+    $string = file_get_contents($f);
+    $rows = json_decode($string);
+    $count = 0;
+    echo "Please wait, Windows is loading for the first time ... \n";
+    foreach($rows as $row) {
+        $ob = entity_uuid_load('node', array($row->uuid), array(), TRUE);
+        $ob = current($ob);
+        $ob = node_load($ob->nid);
+        if(empty($ob)) {
+            echo "MISSING: {$row->uuid}:{$row->title}\n";
+        } else {
+            $save = FALSE;
+            $docs = CMSUtils::get_node_list_value($ob, 'field_meeting_document', 'target_id');
+            foreach($row->docs as $doc) {
+                if(!in_array($doc->uuid, $docs)) {
+                    $docOb = entity_uuid_load('node', array($doc->uuid), array(), TRUE);
+                    $docOb = current($docOb);
+                    $docOb = node_load($docOb->nid);
+                    if(!empty($docOb)) {
+                        $nids = CMSUtils::get_node_list_value($ob, 'field_meeting_document', 'target_id');
+                        if(!in_array($docOb->nid, $nids)) {
+                            echo "Missing relation\n";
+                            echo "{$ob->uuid} - {$ob->title}\n";
+                            echo "{$docOb->nid}: {$docOb->title}\n";
+                            $ob->field_meeting_document['und'][] = array('target_id' => $docOb->nid);
+                            $count++;
+                            $save = TRUE;
+                            echo "-------------------------------------------------\n";
+                        }
+                    } else {
+                        echo sprintf("MISSING DOCUMENT");
+                    }
+                }
+            }
+            if($save) {
+                node_save($ob);
+            }
+        }
+    }
+    echo "Updated: $count\n";
 }
