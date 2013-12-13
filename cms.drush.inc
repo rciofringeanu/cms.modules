@@ -43,6 +43,10 @@ function cms_drush_command() {
         'description' => 'Attach meetings to documents (after module breakdown), see #1586'
     );
 
+    $items['fix_decisions_publish_date_refs_1763'] = array(
+        'description' => 'Fix the publish date for decisions/resolutions/recommendation, by setting it to corresponding COP/MOP date'
+    );
+
     return $items;
 }
 
@@ -243,4 +247,42 @@ function drush_cms_attach_meeting_documents_refs_1586() {
         }
     }
     echo "Updated: $count\n";
+}
+
+/**
+ * This drush task gets all the decisions without the published date field
+ * and sets it do the end/start date of the first related COP/MOP meeting
+ */
+function drush_cms_fix_decisions_publish_date_refs_1763() {
+    $types = array('resolution', 'recommendation', 'decision');
+    $c = 0;
+    $q = new EntityFieldQuery();
+    $docs = $q->entityCondition('entity_type', 'node')
+        ->propertyCondition('type', 'document')
+        ->execute();
+    $docs = node_load_multiple(array_keys($docs['node']));
+    foreach($docs as $nid => $doc) {
+        if(!empty($doc->field_document_type['und'][0]['tid'])) {
+            $tid = $doc->field_document_type['und'][0]['tid'];
+            $type = taxonomy_term_load($tid);
+            $type = strtolower($type->name);
+            if(in_array($type, $types)) {
+                $publish_date = $doc->field_document_publish_date['und'][0];
+                if(empty($publish_date['value'])) {
+                    $c++;
+                    echo "Fixing publish date for {$doc->title}\n";
+                    $d = CMSUtils::get_document_publish_date_from_meeting($doc, 'field_document_meeting');
+                    if(!empty($d)) {
+                        $doc->field_document_publish_date['und'] = array($d);
+                        node_save($doc);
+                    } else {
+                        drupal_set_message("Failed to set publish date for {$nid}", 'warning');
+                    }
+                }
+            }
+        } else {
+            drupal_set_message("Empty field_document_type for nid: {$nid}", 'warning');
+        }
+    }
+    echo "Document(s) fixed: $c\n";
 }

@@ -1131,4 +1131,27 @@ final class CMSUtils {
 
         return TRUE;
     }
+
+
+    /**
+     * Computes the document date getting the date from associated COP/MOP meeting
+     * @param stdClass $doc Drupal document node
+     * @param string $meetings_field Name of the node field that keeps the related meetings
+     */
+    function get_document_publish_date_from_meeting($doc, $meetings_field) {
+        $meetings = CMSUtils::get_node_list_value($doc, 'field_document_meeting', 'target_id');
+        $types = array('mop', 'cop');
+        $meetings = node_load_multiple($meetings);
+        foreach($meetings as $node) {
+                $tid = $node->field_meeting_type['und'][0]['tid'];
+                $type = taxonomy_term_load($tid);
+                $type = strtolower($type->name);
+                if(in_array($type, $types)) {
+                    return (!empty($node->field_meeting_end['und'][0]['value'])) ?
+                        $node->field_meeting_end['und'][0]
+                        : $node->field_meeting_start['und'][0];
+                }
+        }
+        return FALSE;
+    }
 }
