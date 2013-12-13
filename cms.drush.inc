@@ -260,29 +260,34 @@ function drush_cms_fix_decisions_publish_date_refs_1763() {
     $docs = $q->entityCondition('entity_type', 'node')
         ->propertyCondition('type', 'document')
         ->execute();
-    $docs = node_load_multiple(array_keys($docs['node']));
-    foreach($docs as $nid => $doc) {
-        if(!empty($doc->field_document_type['und'][0]['tid'])) {
-            $tid = $doc->field_document_type['und'][0]['tid'];
-            $type = taxonomy_term_load($tid);
-            $type = strtolower($type->name);
-            if(in_array($type, $types)) {
-                $publish_date = $doc->field_document_publish_date['und'][0];
-                if(empty($publish_date['value'])) {
-                    $c++;
-                    echo "Fixing publish date for {$doc->title}\n";
-                    $d = CMSUtils::get_document_publish_date_from_meeting($doc, 'field_document_meeting');
-                    if(!empty($d)) {
-                        $doc->field_document_publish_date['und'] = array($d);
-                        node_save($doc);
-                    } else {
-                        drupal_set_message("Failed to set publish date for {$nid}", 'warning');
+    if ($docs) {
+        $docs = node_load_multiple(array_keys($docs['node']));
+        foreach($docs as $nid => $doc) {
+            if(!empty($doc->field_document_type['und'][0]['tid'])) {
+                $tid = $doc->field_document_type['und'][0]['tid'];
+                $type = taxonomy_term_load($tid);
+                $type = strtolower($type->name);
+                if(in_array($type, $types)) {
+                    $publish_date = $doc->field_document_publish_date['und'][0];
+                    if(empty($publish_date['value'])) {
+                        $c++;
+                        echo "Fixing publish date for {$doc->title}\n";
+                        $d = CMSUtils::get_document_publish_date_from_meeting($doc, 'field_document_meeting');
+                        if(!empty($d)) {
+                            $doc->field_document_publish_date['und'] = array($d);
+                            node_save($doc);
+                        } else {
+                            drupal_set_message("Failed to set publish date for {$nid}", 'warning');
+                        }
                     }
                 }
+            } else {
+                drupal_set_message("Empty field_document_type for nid: {$nid}", 'warning');
             }
-        } else {
-            drupal_set_message("Empty field_document_type for nid: {$nid}", 'warning');
         }
+
+        echo "Document(s) fixed: $c\n";
+    }else {
+        echo "No documents found\n";
     }
-    echo "Document(s) fixed: $c\n";
 }
