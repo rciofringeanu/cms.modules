@@ -47,6 +47,10 @@ function cms_drush_command() {
         'description' => 'Fix the publish date for decisions/resolutions/recommendation, by setting it to corresponding COP/MOP date'
     );
 
+    $items['set_resolutions_adopted_1773'] = array(
+        'description' => 'Set the Resolutions status to "Adopted", if no status is set'
+    );
+
     return $items;
 }
 
@@ -285,4 +289,39 @@ function drush_cms_fix_decisions_publish_date_refs_1763() {
         }
     }
     echo "Document(s) fixed: $c\n";
+}
+
+/**
+ * Set the Resolutions status to "Adopted", if no status is set
+ */
+function drush_set_resolution_adopted_1773() {
+    $q = new EntityFieldQuery();
+    $docs = $q->entityCondition('entity_type', 'node')
+        ->propertyCondition('type', 'document')
+        ->execute();
+    $docs = node_load_multiple(array_keys($docs['node']));
+    $t = taxonomy_get_term_by_name('Adopted', 'document_status');
+    $c = 0;
+    if(!empty($t)) {
+        $t = current($t);
+        $tid = $t->tid;
+        $field_info = field_info_field('field_document_status');
+        foreach($docs as $nid => $doc) {
+            $type = taxonomy_term_load($doc->field_document_type['und'][0]['tid']);
+            $type = strtolower($type->name);
+            if("resolution" == $type) {
+                $lang = $field_info['translatable'] ? $doc->language : LANGUAGE_NONE;
+                $status = field_get_items('node', $doc, 'field_document_status', $lang);
+                if(!$status) {
+                    $doc->field_document_status[$lang][] = array('tid' => $tid);
+                    node_save($doc);
+                    echo "Setting document to Adopted: $nid\n";
+                    $c++;
+                }
+            }
+        }
+    } else {
+        drupal_set_message("Cannot find term 'Adopted' in taxonomy 'document_status'", 'error');
+    }
+    echo "Done. Resolutions affected: $c\n";
 }
