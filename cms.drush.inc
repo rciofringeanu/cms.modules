@@ -39,9 +39,11 @@ function cms_drush_command() {
         'aliases' => array('umdr'),
     );
 
+
     $items['attach_meeting_documents_refs_1586'] = array(
         'description' => 'Attach meetings to documents (after module breakdown), see #1586'
     );
+
 
     $items['fix_decisions_publish_date_refs_1763'] = array(
         'description' => 'Fix the publish date for decisions/resolutions/recommendation, by setting it to corresponding COP/MOP date'
@@ -49,6 +51,26 @@ function cms_drush_command() {
 
     $items['set_resolutions_adopted_1773'] = array(
         'description' => 'Set the Resolutions status to "Adopted", if no status is set'
+
+    $items['sync_instruments_uuid'] = array(
+        'description' => 'Sync uuid of instruments with CMS uuid from given file refs #1730',
+        'arguments' => array(
+            'source_file' => 'Required',
+        ),
+        'examples' => array(
+            'drush sync_instruments_uuid cms/cms.initial_data/sync_instruments.json' => 'Updates the UUID and title of a instrument as in file'
+        ),
+    );
+
+    $items['sync_countries_uuid'] = array(
+        'description' => 'Sync countries uuid with CMS countries uuid form given file refs #1731',
+        'arguments' => array(
+            'source_file' => 'Required',
+        ),
+        'examples' => array(
+            'drush sync_countries_uuid cms/cms.initial_data/cms/countries.json' => 'Updates the UUID of country as in file'
+        ),
+
     );
 
     return $items;
@@ -329,4 +351,115 @@ function drush_cms_set_resolutions_adopted_1773() {
         drupal_set_message("Cannot find term 'Adopted' in taxonomy 'document_status'", 'error');
     }
     echo "Done. Resolutions affected: $c\n";
+}
+
+/**
+ * Updates legal instrument UUID as in cms_uuid from json file
+ * Used for sync uuid between profiles
+ *
+ * @param $file_path json file with instrument (uuid and titles from each profile)
+ *                        searches the instrument by 'profile'_title (aewa_title) key in json
+ */
+
+
+function drush_cms_sync_instruments_uuid($file_path) {
+    $JSON = CMSUtils::read_json($file_path, TRUE);
+    $total_instruments = count($JSON);
+    CMSUtils::println('Found %s instruments', $total_instruments);
+
+    $current_profile = CMSUtils::get_current_profile();
+    $count_saves = 0;
+    foreach ($JSON as $row) {
+        $modified = FALSE;
+        $curr_instrument_title = $row[$current_profile.'_title'];
+        $nodes = entity_uuid_load('node',array($row['cms_uuid']));
+        //if uuid already synced
+        if (!empty($nodes)) {
+            $node = current($nodes);
+            if ($node->title != $row['title']) {
+                CMSUtils::println('Instrument %s has different title than it\'s correspondent in CMS %s',$node->title, $row['cms_title']);
+                $node->title = $row['title'];
+                $modified = TRUE;
+            }
+            if ($modified == TRUE) {
+                $count_saves ++;
+                node_save($node);
+                CMSUtils::println('Instrument %s was updated',$node->title);
+            }
+        } else if(!empty($curr_instrument_title)) {
+            //if not synced
+            $query = new EntityFieldQuery();
+            $entities = $query->entityCondition('entity_type', 'node')
+                ->propertyCondition('type', 'legal_instrument')
+                ->propertyCondition('title', $curr_instrument_title)
+                ->propertyCondition('status', 1)
+                ->range(0,1)
+                ->execute();
+            if (!empty($entities['node'])) {
+                $node = node_load(array_shift(array_keys($entities['node'])));
+                if ($node->uuid != $row['cms_uuid']) {
+                    CMSUtils::println('Instrument %s has different uuid than it\'s correspondent in CMS %s',$node->title, $row['cms_title']);
+                    $node->uuid = $row['cms_uuid'];
+                    $modified = TRUE;
+                }
+                if ($node->title != $row['title']) {
+                    CMSUtils::println('Instrument %s has different title than it\'s correspondent in CMS %s',$node->title, $row['cms_title']);
+                    $node->title = $row['title'];
+                    $modified = TRUE;
+                }
+                if ($modified == TRUE) {
+                    $count_saves ++;
+                    node_save($node);
+                    CMSUtils::println('Instrument %s was updated',$node->title);
+                }
+            } else {
+                CMSUtils::println('Instrument %s was not found by title or UUID in the JSON file',$row['title']);
+            }
+        } else if(empty($curr_instrument_title)) {
+                CMSUtils::println('Instrument %s has no title set for this instrument in the JSON file',$row['title']);
+        }
+    }
+    CMSUtils::println('%s instruments updated',$count_saves);
+}
+
+
+/**
+ * Updates countries' UUID as it's iso2 match in json file
+ * Used for sync countries' UUID between profiles
+ *
+ * @param $file_path    json file with countries (uuid and iso2)
+ *                           searches the Country by field_country_iso2 key in json
+ */
+function drush_cms_sync_countries_uuid($file_path) {
+    $JSON = CMSUtils::read_json($file_path, TRUE);
+    $total_instruments = count($JSON);
+
+    CMSUtils::println('Found %s countries', $total_instruments);
+    $count_saves = 0;
+    foreach ($JSON as $country) {
+        $nodes = entity_uuid_load('node',array($country['uuid']));
+        //if uuid sync or in cms profile
+        if (!empty($nodes)) {
+            CMSUtils::println('Country %s already has the UUID as in JSON file', $country['title']);
+        } else {
+            //if not synced
+            $query = new EntityFieldQuery();
+            $entities = $query->entityCondition('entity_type', 'node')
+                ->propertyCondition('type', 'country')
+                ->propertyCondition('status', 1)
+                ->fieldCondition('field_country_iso2', 'value', $country['field_country_iso2'], '=')
+                ->range(0,1)
+                ->execute();
+            if (!empty($entities['node'])) {
+                $node = node_load(array_shift(array_keys($entities['node'])));
+                CMSUtils::println('Country %s has different UUID than it\'s correspondent in CMS. Updating...',$country['title']);
+                $node->uuid = $country['uuid'];
+                node_save($node);
+                $count_saves ++;
+            } else {
+                CMSUtils::println('Country %s couldn\'t be found by UUID or ISO2', $country->title);
+            }
+        }
+    }
+    CMSUtils::println('%s Countries updated',$count_saves);
 }
