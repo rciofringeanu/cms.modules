@@ -299,7 +299,7 @@ function drush_cms_fix_decisions_publish_date_refs_1763() {
 /**
  * Set the Resolutions status to "Adopted", if no status is set
  */
-function drush_set_resolution_adopted_1773() {
+function drush_cms_set_resolutions_adopted_1773() {
     $q = new EntityFieldQuery();
     $docs = $q->entityCondition('entity_type', 'node')
         ->propertyCondition('type', 'document')
