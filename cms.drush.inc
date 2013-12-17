@@ -51,6 +51,7 @@ function cms_drush_command() {
 
     $items['set_resolutions_adopted_1773'] = array(
         'description' => 'Set the Resolutions status to "Adopted", if no status is set'
+    );
 
     $items['sync_instruments_uuid'] = array(
         'description' => 'Sync uuid of instruments with CMS uuid from given file refs #1730',
@@ -416,7 +417,7 @@ function drush_cms_sync_instruments_uuid($file_path) {
                 CMSUtils::println('Instrument %s was not found by title or UUID in the JSON file',$row['title']);
             }
         } else if(empty($curr_instrument_title)) {
-                CMSUtils::println('Instrument %s has no title set for this instrument in the JSON file',$row['title']);
+            CMSUtils::println('Instrument %s has no title set for this instrument in the JSON file',$row['title']);
         }
     }
     CMSUtils::println('%s instruments updated',$count_saves);
