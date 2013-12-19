@@ -74,6 +74,10 @@ function cms_drush_command() {
 
     );
 
+    $items['set_national_reports_country_1776'] = array(
+        'description' => 'Set the country field from "Submitted by" field'
+    );
+
     return $items;
 }
 
@@ -463,4 +467,63 @@ function drush_cms_sync_countries_uuid($file_path) {
         }
     }
     CMSUtils::println('%s Countries updated',$count_saves);
+}
+
+
+
+
+/**
+ * Get the 'Country Report' field from 'Submitted by' and unset the
+ * 'Submitted by' in case of a match
+ */
+function drush_cms_set_national_reports_country_1776() {
+    $q = new EntityFieldQuery();
+    $res = $q->entityCondition('entity_type', 'node')
+        ->propertyCondition('type', 'country')
+        ->execute();
+    $res = node_load_multiple(array_keys($res['node']));
+    $countries = array();
+    foreach($res as $nid => $ob) {
+        $countries[strtolower($ob->title)] = $nid;
+    }
+
+    $nr = taxonomy_get_term_by_name('National Report', 'document_type');
+    if(empty($nr)) {
+        drupal_set_message("Failed to get tid for National Report document type", 'error');
+        return;
+    }
+    $nr = current($nr);
+    $nr = $nr->tid;
+
+    // Fetch all the national reports
+    $q = new EntityFieldQuery();
+    $q->entityCondition('entity_type', 'node')
+        ->propertyCondition('type', 'document')
+        ->fieldCondition('field_document_type', 'tid', $nr);
+    $res = $q->execute();
+    $docs = node_load_multiple(array_keys($res['node']));
+    $i = 0;
+    $m = 0;
+    foreach($docs as $dnid => $doc) {
+        // Get a hold on the submitted by field tid
+        $sb = CMSUtils::get_node_simple_value($doc, 'field_document_submitted_by', 'tid');
+        if(!empty($sb)) {
+            $sb = taxonomy_term_load($sb);
+            $sb_name = strtolower($sb->name);
+            if(array_key_exists($sb_name, $countries)) {
+                $cid = $countries[$sb_name];
+                // Assign country to the report
+                $doc->field_document_country[$doc->language][] = array('target_id' => $cid);
+                // Unset the 'Submitted by' field
+                $doc->field_document_submitted_by[$doc->language] = array();
+                node_save($doc);
+                $m++;
+            } else {
+                CMSUtils::println("Cannot match '%s' to country for document #: %s", $sb->name, $dnid);
+                $i++;
+            }
+        }
+    }
+    echo "Documents NOT matched: $i\n";
+    echo "Documents matched: $m\n";
 }
