@@ -21,6 +21,8 @@ class datatables_style_plugin extends views_plugin_style_table {
         'search_box' => TRUE,
         'table_info' => TRUE,
         'save_state' => FALSE,
+        'enable_tabletools' => FALSE,
+
     ));
     $options['layout'] = array(
       'default' => array(
@@ -80,6 +82,12 @@ class datatables_style_plugin extends views_plugin_style_table {
       '#default_value' => !empty($this->options['elements']['save_state']),
       '#description' => t("DataTables can use cookies in the end user's web-browser in order to store it's state after each change in drawing. What this means is that if the user were to reload the page, the table should remain exactly as it was (length, filtering, pagination and sorting)"),
     );
+      $form['elements']['enable_tabletools'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Use TableTools'),
+          '#default_value' => !empty($this->options['elements']['enable_tabletools']),
+          '#description' => t("DataTables Table tools"),
+      );
 
     $form['layout'] = array(
       '#type' => 'fieldset',
