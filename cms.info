@@ -13,6 +13,7 @@ dependencies[] = ctools
 dependencies[] = dashboard
 dependencies[] = datatables
 dependencies[] = date
+dependencies[] = date_popup_authored
 dependencies[] = dblog
 dependencies[] = entity
 dependencies[] = entityreference
