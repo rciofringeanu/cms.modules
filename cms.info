@@ -33,5 +33,6 @@ dependencies[] = strongarm
 dependencies[] = taxonomy
 dependencies[] = views
 dependencies[] = views_ui
+dependencies[] = views_content_cache
 files[] = cms.test
 files[] = utils.php
