@@ -288,6 +288,15 @@ function template_preprocess_datatables_view(&$vars) {
     $datatable_options['bFilter'] = $options['elements']['search_box'];
     $datatable_options['bStateSave'] = $options['elements']['save_state'];
     $datatable_options['bLengthChange'] = $options['pages']['length_change'];
+    $datatable_options['bTableTools'] = $options['elements']['enable_tabletools'];
+
+    if($datatable_options['bTableTools'] == TRUE) {
+        $path = drupal_get_path('module', 'datatables');
+        drupal_add_js("$path/dataTables/extras/TableTools/media/js/TableTools.js");
+        drupal_add_js("$path/dataTables/extras/TableTools/media/js/ZeroClipboard.js");
+        drupal_add_css("$path/dataTables/extras/TableTools/media/css/TableTools.css");
+        $datatable_options['oTableTools'] = array( 'sSwfPath' => "/$path/dataTables/extras/TableTools/media/swf/copy_csv_xls_pdf.swf");
+    }
 
     if ($options['pages']['items_per_page_options']) {
         $menu_options = explode(', ', $options['pages']['items_per_page_options']);

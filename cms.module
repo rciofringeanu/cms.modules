@@ -31,6 +31,11 @@ define('LDAP_DEPARTMENT_DN', 'ldap_department_dn');
 define('LDAP_PASSWORD', 'ldap_password');
 
 /**
+ * Define role for Website content types management (news, award etc.)
+ */
+define('ROLE_CONTENT_MANAGER', 'content manager');
+
+/**
  * Define mcrypt IV value
  *
  * Creates an initialization vector (IV) from a random source.
