@@ -5,7 +5,7 @@
         $(selector, context).once('datatables', function() {
           // Check if table contains expandable hidden rows.
           var settings = Drupal.settings.datatables[selector];
-          
+
           if (settings.bExpandable) {
             // Insert a "view more" column to the table.
             var nCloneTh = document.createElement('th');
@@ -25,6 +25,7 @@
 
         settings.sWrapper = "dataTables_wrapper form-inline";
         settings.sPaginationType = "bootstrap";
+        settings.sDom = 'T<"clear">lfrtip';
 
         var datatable = $(selector).dataTable(settings);
 

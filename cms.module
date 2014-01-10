@@ -31,6 +31,11 @@ define('LDAP_DEPARTMENT_DN', 'ldap_department_dn');
 define('LDAP_PASSWORD', 'ldap_password');
 
 /**
+ * Define role for Website content types management (news, award etc.)
+ */
+define('ROLE_CONTENT_MANAGER', 'content manager');
+
+/**
  * Define mcrypt IV value
  *
  * Creates an initialization vector (IV) from a random source.
@@ -1383,3 +1388,94 @@ class CMSBase {
         }
     }
 }
+
+/**
+ * Implementing hook_update_N
+ */
+
+function cms_update_7000() {
+
+    $role = CMSUtils::get_or_create_role(ROLE_CONTENT_MANAGER);
+    if(!empty($role)) {
+        $rid = $role->rid;
+        $permissions = array(
+
+            'access comments' => TRUE,
+            'post comments' => TRUE,
+            'skip comment approval' => TRUE,
+            'edit own comments' => TRUE,
+            'translate content' => TRUE,
+            'access dashboard' => TRUE,
+            'access draggableviews' => TRUE,
+            'translate any entity' => TRUE,
+            'translate node entities' => TRUE,
+            'translate interface' => TRUE,
+            'administer menu' => TRUE,
+            'access content overview' => TRUE,
+            'access content' => TRUE,
+            'view own unpublished content' => TRUE,
+            'view revisions' => TRUE,
+            'revert revisions' => TRUE,
+            'delete revisions' => TRUE,
+            'access user profiles' => TRUE,
+
+            'create award content' => TRUE,
+            'edit own award content' => TRUE,
+            'edit any award content' => TRUE,
+            'delete own award content' => TRUE,
+            'delete any award content' => TRUE,
+
+            'create campaign content' => TRUE,
+            'edit own campaign content' => TRUE,
+            'edit any campaign content' => TRUE,
+            'delete own campaign content' => TRUE,
+            'delete any campaign content' => TRUE,
+
+            'create working_group content' => TRUE,
+            'edit own working_group content' => TRUE,
+            'edit any working_group content' => TRUE,
+            'delete own working_group content' => TRUE,
+            'delete any working_group content' => TRUE,
+
+            'create event_calendar content' => TRUE,
+            'edit own event_calendar content' => TRUE,
+            'edit any event_calendar content' => TRUE,
+            'delete own event_calendar content' => TRUE,
+            'delete any event_calendar content' => TRUE,
+
+            'create page content' => TRUE,
+            'edit own page content' => TRUE,
+            'edit any page content' => TRUE,
+            'delete own page content' => TRUE,
+            'delete any page content' => TRUE,
+
+            'create news content' => TRUE,
+            'edit own news content' => TRUE,
+            'edit any news content' => TRUE,
+            'delete own news content' => TRUE,
+            'delete any news content' => TRUE,
+
+            'administer url aliases' => TRUE,
+            'create url aliases' => TRUE,
+            'notify of path changes' => TRUE,
+            'edit own main profile' => TRUE,
+            'view own main profile' => TRUE,
+            'view any main profile' => TRUE,
+            'search content' => TRUE,
+            'use advanced search' => TRUE,
+            'translate user-defined strings' => TRUE,
+            'access site reports' => TRUE,
+            'view the administration theme' => TRUE,
+        );
+
+        // We clear the cache, otherwise we get PDOException that module is null (module seems is not fully initialized).
+        // @todo: Hopefully this can be be removed in the future
+        menu_rebuild();
+
+        user_role_change_permissions($rid, $permissions);
+        CMSUtils::role_add_permissions('administrator', $permissions);
+    } else {
+        watchdog('news', "Unable to load role name '@role'", array("@role" => ROLE_CONTENT_MANAGER), WATCHDOG_WARNING);
+    }
+}
+
