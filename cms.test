@@ -2,7 +2,6 @@
 
 class CMSWebTestCase extends DrupalWebTestCase {
 
-
     protected static $bundle;
     protected static $role_administrator = 'administrator';
     protected static $role_authenticated = 'authenticated';

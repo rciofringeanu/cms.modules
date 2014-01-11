@@ -28,7 +28,21 @@ define('LDAP_BASE_DN', 'ldap_base_dn');
 define('LDAP_PEOPLE_DN', 'ldap_people_dn');
 define('LDAP_ORGANIZATION_DN', 'ldap_organization_dn');
 define('LDAP_DEPARTMENT_DN', 'ldap_department_dn');
+define('LDAP_INSTRUMENT_DN', 'ldap_instrument_dn');
+define('LDAP_MAILING_DN', 'ldap_mailing_dn');
+define('LDAP_STATUS_PERSON_DN', 'ldap_status_person_dn');
+define('LDAP_STATUS_ORGANIZATION_DN', 'ldap_status_organization_dn');
 define('LDAP_PASSWORD', 'ldap_password');
+
+/**
+ * LDAP objectClass-es
+*/
+define('CMS_MAILING', 'cmsMailingList');
+define('CMS_STATUS_ORGANIZATION', 'cmsStatusOrganization');
+define('CMS_STATUS_PERSON', 'cmsStatusPerson');
+define('CMS_CONTACT', 'cmsContact');
+define('CMS_INSTRUMENT', 'cmsInstrument');
+define('CMS_ORGANIZATION', 'cmsOrganization');
 
 /**
  * Define mcrypt IV value
