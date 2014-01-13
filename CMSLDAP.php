@@ -278,8 +278,7 @@ class CMSLDAP {
      * @param   array    $group_info
      * @return  bool
      */
-    public function add_to_group($group_name, $group_info) {
-        $group_dn = "cn=$group_name," . $this->people_dn;
+    public function add_to_group($group_dn, $group_info) {
         return ldap_mod_add($this->connect, $group_dn, $group_info);
     }
 
@@ -344,12 +343,19 @@ class CMSLDAP {
 
     /**
      * Modify the name of an entry
-     * @param string $dn The distinguished name of an LDAP entity.
-     * @param string $newrdn The new RDN.
-     * @param string $newparent The new parent/superior entry.
-     * @param bool $deleteoldrdn If TRUE the old RDN value(s) is removed, else
-     * the old RDN value(s) is retained as non-distinguished values of the entry.
-     * @return bool Returns TRUE on success or FALSE on failure.
+     *
+     * @param string $dn
+     *    The distinguished name of an LDAP entity.
+     * @param string $newrdn
+     *    The new RDN.
+     * @param string $newparent
+     *    The new parent/superior entry.
+     * @param bool $deleteoldrdn
+     *    If TRUE the old RDN value(s) is removed, else the old RDN value(s) is
+     *    retained as non-distinguished values of the entry.
+     *
+     * @return bool
+     *    Returns TRUE on success or FALSE on failure.
      */
     public function rename($dn, $newrdn, $newparent, $deleteoldrdn) {
         return ldap_rename($this->connect, $dn, $newrdn, $newparent, $deleteoldrdn);
@@ -357,6 +363,9 @@ class CMSLDAP {
 
     /**
      * Close opened LDAP connection
+     *
+     * Frees up the memory allocated internally to store the result.
+     * All result memory will be automatically freed when the script terminates.
      */
     public function close() {
         if ($this->connect) {

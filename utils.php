@@ -3,6 +3,8 @@
 # DIRECTORY_SEPARATOR is a name too long for a constant :D
 define('_DS_', DIRECTORY_SEPARATOR);
 
+module_load_include('module', 'contacts', 'contacts');
+
 final class CMSUtils {
     public static $regions = array(
         "EU" => "Europe",
@@ -389,13 +391,15 @@ final class CMSUtils {
     }
 
     public static function get_mapped_websites() {
-        $data = array();
-        $websites = variable_get('websites');
-        $state = variable_get('state');
+        $data = &drupal_static(__FUNCTION__);
+        if (!isset($data)) {
+            $websites = variable_get('websites');
+            $state = variable_get('state');
 
-        if (in_array($state, array_keys($websites)) && is_array($websites[$state])) {
-            foreach($websites[$state] as $index => $website) {
-                $data[$index] = $website['title'];
+            if (in_array($state, array_keys($websites)) && is_array($websites[$state])) {
+                foreach($websites[$state] as $index => $website) {
+                    $data[$index] = $website['title'];
+                }
             }
         }
 
@@ -1153,5 +1157,35 @@ final class CMSUtils {
                 }
         }
         return FALSE;
+    }
+
+    /**
+     * Get a specified Drupal cache or create it if it does not exists
+     *
+     * @param    string    $cid
+     *  Drupal cache unique identifed
+     * @param    string    $callback
+     *  Callback function which creates the cache
+    */
+    public static function get_or_create_cache($cid, $callback) {
+        if ($cache = cache_get($cid)) {
+            $cache_data = $cache->data;
+        }else {
+            $callback();
+            $cache_data = cache_get($cid)->data;
+        }
+
+        return $cache_data;
+    }
+
+    /**
+     * LDAP results are returned with a 'count' key and most of the time we need to remove it
+     *
+     * @param    array    $data
+    */
+    public static function unset_count_key(&$data = array()) {
+        if (is_array($data) && array_key_exists('count', $data)) {
+            unset($data['count']);
+        }
     }
 }
