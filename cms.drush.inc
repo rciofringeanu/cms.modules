@@ -516,6 +516,7 @@ function drush_cms_set_national_reports_country_1776() {
                 $doc->field_document_country[$doc->language][] = array('target_id' => $cid);
                 // Unset the 'Submitted by' field
                 $doc->field_document_submitted_by[$doc->language] = array();
+                echo "Saving node {$doc->nid}\n";
                 node_save($doc);
                 $m++;
             } else {
