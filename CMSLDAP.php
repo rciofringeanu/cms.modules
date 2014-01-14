@@ -311,8 +311,7 @@ class CMSLDAP {
      * @param   array    $group_info
      * @return  bool
      */
-    public function delete_from_group($group_name, $group_info) {
-        $group_dn = "cn=$group_name," . $this->people_dn;
+    public function delete_from_group($group_dn, $group_info) {
         return ldap_mod_del($this->connect, $group_dn, $group_info);
     }
 
