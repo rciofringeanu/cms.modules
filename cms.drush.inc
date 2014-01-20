@@ -78,6 +78,10 @@ function cms_drush_command() {
         'description' => 'Set the country field from "Submitted by" field'
     );
 
+    $items['move_pub_date_to_partial_date_refs_1821'] = array(
+        'description' => 'Move publication date to partial date field refs #1821. SET THE FIELD FIRST!'
+    );
+
     return $items;
 }
 
@@ -527,4 +531,52 @@ function drush_cms_set_national_reports_country_1776() {
     }
     echo "Documents NOT matched: $i\n";
     echo "Documents matched: $m\n";
+}
+
+/**
+ * Function refs #1821
+ * Move the published date from field_publication_published (date) to field_publication_published_date (partial_date)
+ *
+ * Author Dragos Dumitrescu
+ */
+
+function drush_cms_move_pub_date_to_partial_date_refs_1821() {
+    $field_info = field_info_instance('node', 'field_publication_published_date', 'publication');
+    if ($field_info == NULL) {
+        echo "Cannot find field_publication_published_date. Canceling...";
+        return;
+    }
+
+    $field_info = field_info_instance('node', 'field_publication_published', 'publication');
+    if ($field_info == NULL) {
+        echo "Cannot find field_publication_published. You might have already done this update. Canceling...";
+        return;
+    }
+
+    $publications = node_load_multiple( array(),
+        array(
+            'type' => 'publication',
+        )
+    );
+    CMSUtils::println("%s publications found", count($publications));
+    $saves_counter = 0;
+    foreach ($publications as $node) {
+        if (!empty($node->field_publication_published[$node->language][0]['value'])) {
+            $date = $node->field_publication_published[$node->language][0]['value'];
+            if (empty($node->field_publication_published_date[$node->language][0]['from']['year'])) {
+                $node->field_publication_published_date[$node->language][0]['from']['year'] = date('Y', strtotime($date));
+                $node->field_publication_published_date[$node->language][0]['from']['month'] = date('m', strtotime($date));
+                node_save($node);
+                $saves_counter++;
+            } else {
+                CMSUtils::println("%s has already year set in published_date field", $node->title);
+            }
+        } else {
+            CMSUtils::println("--> %s has empty published date", $node->title);
+        }
+    }
+    CMSUtils::println('-------------------------------------------');
+    CMSUtils::println("%s Publications were updated", $saves_counter);
+    CMSUtils::println("Check if the update is ok and you can delete the field_publication_published.");
+
 }
