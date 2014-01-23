@@ -353,6 +353,9 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
             foreach ($items as $delta => $item) {
                 $element[$delta]['#settings'] = $settings;
                 $output = $item['from']['year'];
+                if (!empty($item['from']['month'])) {
+                    $output .= ' - ' . $item['from']['month'];
+                }
                 $element[$delta]['text'] = array('#markup' => $output);
             }
             break;
