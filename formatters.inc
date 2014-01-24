@@ -69,6 +69,14 @@ function cms_field_formatter_info() {
                 'render_link' => '0', /* Render as anchor */
             ),
         ),
+        'cms_partial_date_tr_formatter' => array(
+            'label' => t('Partial date Horizontal table row'),
+            'field types' => array('partial_date'),
+            'settings' => array(
+                'render_tr' => TRUE, /* Render enclosing TR */
+                'render_link' => '0', /* Render as anchor */
+            ),
+        ),
         'cms_term_reference_field_table_row_formatter' => array(
             'label' => t('Term Reference Horizontal table row'),
             'field types' => array('taxonomy_term_reference'),
@@ -201,6 +209,13 @@ function cms_field_formatter_settings_form($field, $instance, $view_mode, $form,
                 )
             );
             break;
+        case 'cms_partial_date_tr_formatter':
+            $element['render_tr'] = array(
+                '#type'           => 'checkbox',
+                '#title'          => t('Render enclosing &lt;tr&gt;&lt;/tr&gt; table row'),
+                '#default_value'  => $settings['render_tr'],
+            );
+            break;
         case 'cms_term_reference_field_table_row_formatter':
             $element['render_tr'] = array(
                 '#type'           => 'checkbox',
@@ -269,6 +284,8 @@ function cms_field_formatter_settings_summary($field, $instance, $view_mode) {
     switch($type) {
         case 'cms_field_table_row_formatter':
             return t('Render the data as horizontal table row. Handles URLs');
+        case 'cms_partial_date_tr_formatter':
+            return t('Render the partial data as horizontal table row.');
         case 'cms_term_reference_field_table_row_formatter':
             return t('Render Term references as horizontal table row. Handles URLs');
         case 'cms_region_formatter':
@@ -329,7 +346,16 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                 if (!empty($allowed_values) && array_key_exists($output, $allowed_values)) {
                     $output = $allowed_values[$output];
                 }
-
+                $element[$delta]['text'] = array('#markup' => $output);
+            }
+            break;
+        case 'cms_partial_date_tr_formatter':
+            foreach ($items as $delta => $item) {
+                $element[$delta]['#settings'] = $settings;
+                $output = $item['from']['year'];
+                if (!empty($item['from']['month'])) {
+                    $output .= ' - ' . $item['from']['month'];
+                }
                 $element[$delta]['text'] = array('#markup' => $output);
             }
             break;
@@ -710,6 +736,7 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
             }
             break;
     }
+
     return $element;
 }
 
@@ -723,6 +750,7 @@ function cms_theme() {
     return array(
         // Override in theme with themename_cms_field_table_row_formatter()
         'cms_field_table_row_formatter' => array('render element' => 'item'),
+        'cms_partial_date_tr_formatter' => array('render element' => 'item'),
         'cms_term_reference_field_table_row_formatter' => array('render element' => 'item'),
         'cms_region_formatter' => array('render element' => 'item'),
         'cms_iucn_status_formatter' => array('render element' => 'item'),
@@ -774,6 +802,26 @@ function theme_cms_field_table_row_formatter($variables) {
             } else {
                 $v = render($value);
             }
+
+            $ret .= $v;
+            if (($index + 1) < count($values)) {
+                $ret .= ", ";
+            }
+        }
+
+        return sprintf('<tr><th>%s</th><td>%s</td></tr>', $item['#title'], $ret);
+    }
+}
+
+function theme_cms_partial_date_tr_formatter($variables) {
+
+    extract($variables);
+    if(!empty($item['#items'])) {
+        $values = $item['#items'];
+        $ret = '';
+        foreach ($values as $index => $item_value) {
+            $value = $item[$index];
+            $v = render($value);
 
             $ret .= $v;
             if (($index + 1) < count($values)) {
