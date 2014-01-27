@@ -33,7 +33,6 @@ function cms_install() {
     CMSBase::vocabulary_create(ucfirst(VOC_CURRENCY), VOC_CURRENCY);
     CMSBase::vocabulary_create(ucfirst(VOC_REGION), VOC_REGION);
     CMSBase::vocabulary_create(ucfirst(VOC_LANGUAGES), VOC_LANGUAGES);
-    CMSBase::vocabulary_create(t('Official UN Languages'), VOC_UN_LANGUAGES);
 }
 
 function cms_uninstall() {
