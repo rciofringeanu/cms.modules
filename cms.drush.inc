@@ -82,6 +82,10 @@ function cms_drush_command() {
         'description' => 'Move publication date to partial date field refs #1821. SET THE FIELD FIRST!'
     );
 
+    $items['add_basic_page'] = array(
+        'description' => 'Basic Page'
+    );
+
     return $items;
 }
 
@@ -579,4 +583,57 @@ function drush_cms_move_pub_date_to_partial_date_refs_1821() {
     CMSUtils::println("%s Publications were updated", $saves_counter);
     CMSUtils::println("Check if the update is ok and you can delete the field_publication_published.");
 
+}
+
+/**
+ * Function used for creating basic pages from json
+ * for each existing domains except default
+ *
+ * @param $file_path
+ */
+function drush_cms_add_basic_page($file_path) {
+
+    $JSON = CMSUtils::read_json($file_path, TRUE);
+    $total_pages = count($JSON);
+    CMSUtils::println('%s pages found', $total_pages);
+
+    //Get domains
+    $domain_ids = domain_id_list();
+    //Remove primary domain
+    array_shift($domain_ids);
+
+    foreach ($domain_ids as $domain_id ) {
+        $count_saves = 0;
+        foreach ($JSON as $page) {
+            //Check if page for domain already exists
+            $items = entity_load('node', FALSE, array(
+                'type' => 'page',
+                'title' => $page['title'],
+            ));
+            if (count($items)) {
+                foreach ($items as $item) {
+                    if($item->domain_source == $domain_id) {
+                        CMSUtils::println("%s already exists for domain %s", $page['title'], $domain_id);
+                        continue 2;
+                    }
+                }
+            }
+            //Creating new page for domain
+            $node = new stdClass();
+            $node->type = "page";
+            $node->title = $page['title'];
+            $node->language = LANGUAGE_NONE;
+            $node->domain_site = FALSE;
+            $node->domain_source = $domain_id;
+            $node->domains = array($domain_id => $domain_id);
+            $node->domain_path = array($domain_id => $page['alias']);
+            node_object_prepare($node);
+            node_save($node);
+            if ($node->nid) {
+                $count_saves ++;
+            }
+        }
+        CMSUtils::println('%s pages SAVED and %s FAILED for domain %s', $count_saves, $total_pages - $count_saves, $domain_id);
+    }
+    CMSUtils::println("Done.");
 }
