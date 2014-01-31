@@ -596,7 +596,7 @@ function drush_cms_add_basic_page($file_path) {
     $JSON = CMSUtils::read_json($file_path, TRUE);
     $total_pages = count($JSON);
     CMSUtils::println('%s pages found', $total_pages);
-
+    $language = language_default()->language;
     //Get domains
     $domain_ids = domain_id_list();
     //Remove primary domain
@@ -622,7 +622,7 @@ function drush_cms_add_basic_page($file_path) {
             $node = new stdClass();
             $node->type = "page";
             $node->title = $page['title'];
-            $node->language = LANGUAGE_NONE;
+            $node->language = $language;
             $node->domain_site = FALSE;
             $node->domain_source = $domain_id;
             $node->domains = array($domain_id => $domain_id);
