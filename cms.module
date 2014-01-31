@@ -226,30 +226,30 @@ function get_available_tabs($node = NULL, $content_type = '') {
  *
  * @return      string
  */
-function render_slot($node, $name, $type, $content = array(), $theme = 'cms_theme') {
+function render_slot($node, $name, $type, $content = array()) {
     $file = $type . DIRECTORY_SEPARATOR . $name . '.tpl.php';
-    $template_path = drupal_get_path('theme', $theme) . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
+    $template_path = drupal_get_path('theme', $GLOBALS['theme']) . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
     echo theme_render_template($template_path, array('node' => $node,
                                                      'nid' => $node->nid,
                                                      'content' => $content));
 }
 
-function render_simple_slot($name, $type, $data = array(), $theme = 'cms_theme') {
+function render_simple_slot($name, $type, $data = array()) {
     $file = $type . DIRECTORY_SEPARATOR . $name . '.tpl.php';
-    $template_path = drupal_get_path('theme', $theme) . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
+    $template_path = drupal_get_path('theme', $GLOBALS['theme']) . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
     echo theme_render_template($template_path, array('data' => $data));
 }
 
-function render_family_tabs($tabs = array(), $type = '', $tabs_id = '', $field = '', $theme = 'cms_theme') {
+function render_family_tabs($tabs = array(), $type = '', $tabs_id = '', $field = '') {
     $file = $type . DIRECTORY_SEPARATOR . 'family-tabs.tpl.php';
-    $template_path = drupal_get_path('theme', $theme) . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
+    $template_path = drupal_get_path('theme', $GLOBALS['theme']) . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'slots' . DIRECTORY_SEPARATOR . $file;
     echo theme_render_template($template_path, array('tabs' => $tabs,
                                                      'tabs_id' => $tabs_id,
                                                      'field' => $field));
 }
 
-function render_tab($title = '', $href = '', $class = '', $field_name = '', $show_counter = FALSE, $content = array(), $theme = 'cms_theme') {
-    $template_path = drupal_get_path('theme', $theme) . _DS_ . implode(_DS_, array(
+function render_tab($title = '', $href = '', $class = '', $field_name = '', $show_counter = FALSE, $content = array()) {
+    $template_path = drupal_get_path('theme', $GLOBALS['theme']) . _DS_ . implode(_DS_, array(
                                                                                        'templates',
                                                                                        'slots',
                                                                                        'general',
