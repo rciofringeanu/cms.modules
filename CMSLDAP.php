@@ -59,9 +59,9 @@ class CMSLDAP {
         if ($this->connect) {
             ldap_set_option($this->connect, LDAP_OPT_PROTOCOL_VERSION, 3);
             $bind_result = @ldap_bind($this->connect, $this->bind_rdn, $this->password);
-            if (!$bind_result) {
+            //if (!$bind_result) {
                 //@todo: drupal_set_message('Unable to bind the LDAP server! Please contact site administrator.', 'error');
-            }
+            //}
             $this->connected = TRUE;
         } else {
             //@todo: drupal_set_message('Unable to connect to the LDAP server! Please contact site administrator.', 'error');
