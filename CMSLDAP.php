@@ -34,6 +34,8 @@ class CMSLDAP {
     public $port;
     public $connected = FALSE;
 
+    private static $instance = FALSE;
+
     public function __construct() {
         $this->base_dn = variable_get(LDAP_BASE_DN);
         $this->bind_rdn = variable_get(LDAP_BIND_RDN);
@@ -57,15 +59,20 @@ class CMSLDAP {
         if ($this->connect) {
             ldap_set_option($this->connect, LDAP_OPT_PROTOCOL_VERSION, 3);
             $bind_result = @ldap_bind($this->connect, $this->bind_rdn, $this->password);
-
             if (!$bind_result) {
-                drupal_set_message('Unable to bind the LDAP server! Please contact site administrator.', 'error');
+                //@todo: drupal_set_message('Unable to bind the LDAP server! Please contact site administrator.', 'error');
             }
-
             $this->connected = TRUE;
         } else {
-            drupal_set_message('Unable to connect to the LDAP server! Please contact site administrator.', 'error');
+            //@todo: drupal_set_message('Unable to connect to the LDAP server! Please contact site administrator.', 'error');
         }
+    }
+
+    public static function get_instance() {
+        if(!self::$instance) {
+            self::$instance = new CMSLDAP();
+        }
+        return self::$instance;
     }
 
     public function __destruct() {
@@ -311,8 +318,7 @@ class CMSLDAP {
      * @param   array    $group_info
      * @return  bool
      */
-    public function delete_from_group($group_name, $group_info) {
-        $group_dn = "cn=$group_name," . $this->people_dn;
+    public function delete_from_group($group_dn, $group_info) {
         return ldap_mod_del($this->connect, $group_dn, $group_info);
     }
 
