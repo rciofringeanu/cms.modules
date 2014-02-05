@@ -28,7 +28,6 @@ dependencies[] = number
 dependencies[] = options
 dependencies[] = path
 dependencies[] = search
-dependencies[] = simpletest
 dependencies[] = strongarm
 dependencies[] = taxonomy
 dependencies[] = views
