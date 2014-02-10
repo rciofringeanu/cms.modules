@@ -33,6 +33,13 @@ function cms_install() {
     CMSBase::vocabulary_create(ucfirst(VOC_CURRENCY), VOC_CURRENCY);
     CMSBase::vocabulary_create(ucfirst(VOC_REGION), VOC_REGION);
     CMSBase::vocabulary_create(ucfirst(VOC_LANGUAGES), VOC_LANGUAGES);
+    CMSBase::vocabulary_create("UN official languages", VOC_UN_LANGUAGES);
+
+    $permissions = array();
+    CMSUtils::set_vocabulary_permissions($permissions, VOC_CURRENCY, '', 'administrator');
+    CMSUtils::set_vocabulary_permissions($permissions, VOC_REGION, '', 'administrator');
+    CMSUtils::set_vocabulary_permissions($permissions, VOC_UN_LANGUAGES, '', 'administrator');
+    CMSUtils::role_add_permissions('administrator', $permissions);
 }
 
 function cms_uninstall() {
