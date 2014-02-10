@@ -268,6 +268,22 @@ function render_tab($title = '', $href = '', $class = '', $field_name = '', $sho
                                                ));
 }
 
+function render_tab_view($title = '', $href = '', $class = '', $counter = 0) {
+    $template_path = drupal_get_path('theme', $GLOBALS['theme']) . _DS_ . implode(_DS_, array(
+            'templates',
+            'slots',
+            'general',
+            'tab_view.tpl.php'
+        ));
+
+    echo theme_render_template($template_path, array(
+        'title' => $title,
+        'class' => $class,
+        'href' => $href,
+        'counter' => $counter,
+    ));
+}
+
 
 
 /**
