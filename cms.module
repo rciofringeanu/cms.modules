@@ -44,6 +44,7 @@ define('CMS_CONTACT', 'cmsContact');
 define('CMS_INSTRUMENT', 'cmsInstrument');
 define('CMS_ORGANIZATION', 'cmsOrganization');
 define('CMS_COUNTRY_NFP', 'cmsCountryNFP');
+define('CMS_INSTRUMENT_STATUS_ORGANIZATION', 'cmsInstrumentStatusOrganization');
 
 /*
  * Define role for Website content types management (news, award etc.)
