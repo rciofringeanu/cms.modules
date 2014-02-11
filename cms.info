@@ -3,7 +3,7 @@ description = Introduces custom modules for CMS along with custom functionalitie
 core = 7.x
 package = CMS
 php = 5.2.4
-version = 7.x-2.0
+version = 7.x-2.1
 
 dependencies[] = block
 dependencies[] = color
@@ -30,8 +30,5 @@ dependencies[] = path
 dependencies[] = search
 dependencies[] = strongarm
 dependencies[] = taxonomy
-dependencies[] = views
-dependencies[] = views_ui
-dependencies[] = views_content_cache
 files[] = cms.test
 files[] = utils.php
