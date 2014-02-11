@@ -17,7 +17,6 @@ dependencies[] = date_popup_authored
 dependencies[] = dblog
 dependencies[] = entity
 dependencies[] = entityreference
-dependencies[] = features
 dependencies[] = field_ui
 dependencies[] = file
 dependencies[] = help
