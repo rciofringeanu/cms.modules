@@ -1,6 +1,5 @@
 <?php
 
-module_load_include('inc', 'cms', 'cms.features');
 module_load_include('inc', 'cms', 'formatters');
 
 /**
