@@ -362,14 +362,16 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
         case 'cms_term_reference_field_table_row_formatter':
             foreach ($items as $delta => $item) {
                 $term = entity_load_unchanged('taxonomy_term', $item['tid']);
-                $uri = entity_uri('taxonomy_term', $term);
-                $element[$delta] = array(
-                  '#type' => 'link',
-                  '#title' => $term->name,
-                  '#href' => $uri['path'],
-                  '#options' => $uri['options'],
-                  '#settings' => $settings,
-                );
+		if($term) {
+                    $uri = entity_uri('taxonomy_term', $term);
+                    $element[$delta] = array(
+                        '#type' => 'link',
+                        '#title' => $term->name,
+                        '#href' => $uri['path'],
+                        '#options' => $uri['options'],
+                        '#settings' => $settings,
+                    );
+               }
             }
             break;
         case 'cms_iucn_status_formatter':
