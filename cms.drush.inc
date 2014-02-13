@@ -86,6 +86,12 @@ function cms_drush_command() {
         'description' => 'Basic Page'
     );
 
+    $items['fix_species_instruments_1730'] = array(
+        'description' => 'Restore from json the species instruments relations #1730.',
+        'examples' => array(
+            'drush fix_species_instruments_1730 /path/to/species.json /path/to/instrument_species_mapped.json ' => 'Restore species instrument relations')
+    );
+
     return $items;
 }
 
@@ -636,4 +642,82 @@ function drush_cms_add_basic_page($file_path) {
         CMSUtils::println('%s pages SAVED and %s FAILED for domain %s', $count_saves, $total_pages - $count_saves, $domain_id);
     }
     CMSUtils::println("Done.");
+}
+
+function drush_cms_fix_species_instruments_1730($data_file_path, $instruments_map_file_path) {
+    $species_data = CMSUtils::read_json($data_file_path, TRUE);
+    $instruments_map = CMSUtils::read_json($instruments_map_file_path, TRUE);
+    $total_species = count($species_data);
+    CMSUtils::println('%s species found', $total_species);
+    $total_saves = 0;
+    foreach ($species_data as $species) {
+        $query = new EntityFieldQuery();
+        $entities = $query->entityCondition('entity_type', 'node')
+            ->propertyCondition('type', 'species')
+            ->propertyCondition('title', $species['title'])
+            ->propertyCondition('status', 1)
+            ->range(0,1)
+            ->execute();
+        if(!empty($entities)) {
+            $node = node_load(array_shift(array_keys($entities['node'])));
+        }
+
+        $imported_instruments = array();
+        $imported_instruments_ids = array();
+        if (isset($species['field_species_instruments'])) {
+            foreach ($species['field_species_instruments'] as $instrument_collection) {
+                $query = new EntityFieldQuery();
+                if (isset($instruments_map[$instrument_collection['field_species_instrument']])) {
+                    $current_instrument_title = $instruments_map[$instrument_collection['field_species_instrument']];
+                } else {
+                    CMSUtils::println('%s doesn\'t have a mapped title', $instrument_collection['field_species_instrument']);
+                    continue;
+                }
+                $entities = $query->entityCondition('entity_type', 'node')
+                    ->propertyCondition('type', 'legal_instrument')
+                    ->propertyCondition('title', $current_instrument_title)
+                    ->propertyCondition('status', 1)
+                    ->range(0,1)
+                    ->execute();
+                if (!empty($entities['node'])) {
+                    $instrument_id = array_shift(array_keys($entities['node']));
+                    $imported_instruments_ids []= $instrument_id;
+                    $imported_instruments[$instrument_id] = $instrument_collection;
+                } else {
+                    CMSUtils::println('%s can\'t load by title', $current_instrument_title);
+                    continue;
+                }
+
+            }
+        }
+        if (count($imported_instruments) > 0) {
+            $existing_instruments = array();
+            if (isset($node->field_species_instruments[$node->language])) {
+                foreach ($node->field_species_instruments[$node->language] as $field_collection) {
+                    $field_collection = field_collection_item_load($field_collection['value']);
+                    $existing_instruments []= $field_collection->field_species_instrument[$node->language][0]['target_id'];
+                }
+            }
+            $new_instruments_ids = array_diff($imported_instruments_ids, $existing_instruments);
+
+            $save = false;
+            foreach ($new_instruments_ids as $nid) {
+                $new_fc = array();
+                $new_fc['field_name'] = 'field_species_instruments';
+                $new_fc['field_species_instrument'][$node->language][0]['target_id'] = $nid;
+                if (isset($imported_instruments[$nid]['field_species_instrument_date']) && (!empty($imported_instruments[$nid]['field_species_instrument_date']))) {
+                    $new_fc['field_species_instrument_date'][$node->language][0]['value'] = $imported_instruments[$nid]['field_species_instrument_date'];
+                }
+                $entity = entity_create('field_collection_item', $new_fc);
+                $entity->setHostEntity('node', $node);
+                $save = true;
+                $total_saves ++;
+            }
+            if ($save) {
+                CMSUtils::println('%s has new instruments with ids %s', $node->title, implode(', ', $new_instruments_ids));
+                node_save($node);
+            }
+        }
+    }
+    CMSUtils::println('%s species saved', $total_saves);
 }
