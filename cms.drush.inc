@@ -692,21 +692,20 @@ function drush_cms_fix_species_instruments_1730($data_file_path, $instruments_ma
         }
         if (count($imported_instruments) > 0) {
             $existing_instruments = array();
-            if (isset($node->field_species_instruments[$node->language])) {
-                foreach ($node->field_species_instruments[$node->language] as $field_collection) {
+            if (isset($node->field_species_instruments[LANGUAGE_NONE])) {
+                foreach ($node->field_species_instruments[LANGUAGE_NONE] as $field_collection) {
                     $field_collection = field_collection_item_load($field_collection['value']);
-                    $existing_instruments []= $field_collection->field_species_instrument[$node->language][0]['target_id'];
+                    $existing_instruments[]= $field_collection->field_species_instrument[LANGUAGE_NONE][0]['target_id'];
                 }
             }
-            $new_instruments_ids = array_diff($imported_instruments_ids, $existing_instruments);
-
+            $new_instruments_ids = array_unique(array_diff($imported_instruments_ids, $existing_instruments));
             $save = false;
             foreach ($new_instruments_ids as $nid) {
                 $new_fc = array();
                 $new_fc['field_name'] = 'field_species_instruments';
-                $new_fc['field_species_instrument'][$node->language][0]['target_id'] = $nid;
+                $new_fc['field_species_instrument'][LANGUAGE_NONE][0]['target_id'] = $nid;
                 if (isset($imported_instruments[$nid]['field_species_instrument_date']) && (!empty($imported_instruments[$nid]['field_species_instrument_date']))) {
-                    $new_fc['field_species_instrument_date'][$node->language][0]['value'] = $imported_instruments[$nid]['field_species_instrument_date'];
+                    $new_fc['field_species_instrument_date'][LANGUAGE_NONE][0]['value'] = $imported_instruments[$nid]['field_species_instrument_date'];
                 }
                 $entity = entity_create('field_collection_item', $new_fc);
                 $entity->setHostEntity('node', $node);
