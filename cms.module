@@ -283,7 +283,19 @@ function render_tab_view($title = '', $href = '', $class = '', $counter = 0) {
     ));
 }
 
+function is_theme_admin() {
+    if ($GLOBALS['theme'] == 'cms_theme') {
+        return true;
+    }
+    return false;
+}
 
+function is_theme_frontend() {
+    if ($GLOBALS['theme'] == 'cms_frontend') {
+        return true;
+    }
+    return false;
+}
 
 /**
  */
@@ -330,6 +342,8 @@ function is_current_page($menu_item) {
 
     return false;
 }
+
+
 
 /**
  * This is the base class that contains code common to all modules.
