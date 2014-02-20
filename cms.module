@@ -180,7 +180,19 @@ function cms_date_formats() {
     );
 }
 
-
+function cms_access_domain_node($node, $op, $account, $node_type, $role) {
+    if(!empty($node->type) && ($node->type == $node_type)) {
+        if($op == 'view') {
+            return NODE_ACCESS_ALLOW;
+        } else {
+            if(in_array($role, $account->roles)) {
+                return NODE_ACCESS_ALLOW;
+            }
+        }
+        return NODE_ACCESS_DENY;
+    }
+    return NODE_ACCESS_IGNORE;
+}
 
 /**
  *
