@@ -180,7 +180,16 @@ function cms_date_formats() {
     );
 }
 
-
+/**
+ * Function to give view permissions of nodes on all domains
+ * Temprorary fix for Drupal ticket https://drupal.org/node/2202171
+ *    - Issue: on nodes with checked "send to all affiliates" checkbox, users can't access them on any domains as it should
+ *    - this functionality is needed for example in "manage" sub-domain - to access any node
+ */
+function cms_node_load($nodes, $types) {
+    global $_domain;
+    $_domain['site_grant'] = TRUE;
+}
 
 /**
  *
