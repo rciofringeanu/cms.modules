@@ -352,10 +352,11 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
         case 'cms_partial_date_tr_formatter':
             foreach ($items as $delta => $item) {
                 $element[$delta]['#settings'] = $settings;
-                $output = $item['from']['year'];
+                $output = '';
                 if (!empty($item['from']['month'])) {
-                    $output .= ' - ' . $item['from']['month'];
+                    $output .= date('F', mktime(0, 0, 0, $item['from']['month'], 10)) . ' ';
                 }
+                $output .= $item['from']['year'];
                 $element[$delta]['text'] = array('#markup' => $output);
             }
             break;
