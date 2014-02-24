@@ -356,7 +356,9 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                 if (!empty($item['from']['month'])) {
                     $output .= date('F', mktime(0, 0, 0, $item['from']['month'], 10)) . ' ';
                 }
-                $output .= $item['from']['year'];
+                if (!empty($item['from']['year'])) {
+                    $output .= $item['from']['year'];
+                }
                 $element[$delta]['text'] = array('#markup' => $output);
             }
             break;
