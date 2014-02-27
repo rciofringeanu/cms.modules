@@ -91,13 +91,6 @@ function cms_drush_command() {
         'examples' => array(
             'drush fix_species_instruments_1730 /path/to/species.json /path/to/instrument_species_mapped.json ' => 'Restore species instrument relations')
     );
-    $items['fix_paths_sef'] = array(
-        'description' => 'Fix paths of existing content to use SEF config from pathauto module',
-        'options' => array ('type' => 'content types to be updated'),
-        'examples' => array(
-            'drush fix_paths_sef' => 'For all content types',
-            'drush fix_paths_sef --type=species,country' => 'For specific content types')
-    );
 
     return $items;
 }
@@ -727,44 +720,3 @@ function drush_cms_fix_species_instruments_1730($data_file_path, $instruments_ma
     }
     CMSUtils::println('%s species saved', $total_saves);
 }
-
-/**
- * Read de drush description above
- * @author Dragos Dumitrescu
- */
-function drush_cms_fix_paths_sef() {
-    $types = drush_get_option('type');
-    if (empty($types)) {
-        $types = array(
-            'species', 'meeting', 'legal_instrument', 'project', 'country', 'document', 'publication',
-            'award', 'page', 'campaign', 'news', 'working_group', 'event_calendar'
-        );
-    } else {
-        $types = explode(',', $types);
-    }
-    foreach ($types as $type) {
-        $query = new EntityFieldQuery();
-        $entities = $query->entityCondition('entity_type', 'node')
-            ->propertyCondition('type', $type)
-            ->execute();
-        if (!empty($entities['node'])) {
-            CMSUtils::println('Updating for %s ...', $type);
-            $total_saves = 0;
-            foreach ($entities['node'] as $nid => $entity) {
-                $node = node_load($nid);
-                $node->path['pathauto'] = TRUE;
-                node_save($node);
-                $total_saves ++;
-                echo $nid .', ';
-            }
-            CMSUtils::println('');
-            CMSUtils::println('-------------------');
-            CMSUtils::println('%s  %s saved', $total_saves, $type);
-        } else {
-            CMSUtils::println('No %s found', $type);
-        }
-    }
-    CMSUtils::println('Done!');
-}
-
-
