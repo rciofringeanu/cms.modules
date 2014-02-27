@@ -192,6 +192,27 @@ function cms_node_load($nodes, $types) {
 }
 
 /**
+ * Implements hook_node_view($node, $view_mode, $langcode)
+ * this is called when a node is loaded for add/edit form
+ */
+function cms_node_prepare($node) {
+
+    //Redirect on node edit/add from front-end to manage (sudomain)
+    $domain = domain_get_domain();
+    $redirect_content_types = array(
+        'species', 'meeting', 'legal_instrument', 'project', 'country', 'document', 'publication',
+    );
+    if (!empty($domain) && !strpos($domain['subdomain'], 'manage')) {
+        if (in_array($node->type, $redirect_content_types)) {
+            $manage_domain_id = db_query("SELECT domain_id FROM {domain} WHERE machine_name LIKE '%_manage' ")->fetchField();
+            $manage = domain_load($manage_domain_id);
+            $path = domain_get_uri($manage);
+            drupal_goto($path);
+        }
+    }
+}
+
+/**
  *
  */
 function get_available_tabs($node = NULL, $content_type = '') {
