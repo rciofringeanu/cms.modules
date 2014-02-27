@@ -93,10 +93,10 @@ function cms_drush_command() {
     );
     $items['fix_paths_sef'] = array(
         'description' => 'Fix paths of existing content to use SEF config from pathauto module',
-        'options' => array ('type' => 'content type'),
+        'options' => array ('type' => 'content types to be updated'),
         'examples' => array(
-            'drush fix_paths_sef' => 'Restore species instrument relations',
-            'drush fix_paths_sef --type=species,country' => 'Restore species instrument relations')
+            'drush fix_paths_sef' => 'For all content types',
+            'drush fix_paths_sef --type=species,country' => 'For specific content types')
     );
 
     return $items;
@@ -728,6 +728,10 @@ function drush_cms_fix_species_instruments_1730($data_file_path, $instruments_ma
     CMSUtils::println('%s species saved', $total_saves);
 }
 
+/**
+ * Read de drush description above
+ * @author Dragos Dumitrescu
+ */
 function drush_cms_fix_paths_sef() {
     $types = drush_get_option('type');
     if (empty($types)) {
