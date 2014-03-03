@@ -667,10 +667,10 @@ function drush_cms_fix_species_instruments_1730($data_file_path, $instruments_ma
         if (isset($species['field_species_instruments'])) {
             foreach ($species['field_species_instruments'] as $instrument_collection) {
                 $query = new EntityFieldQuery();
-                if (isset($instruments_map[$instrument_collection['field_species_instrument']])) {
-                    $current_instrument_title = $instruments_map[$instrument_collection['field_species_instrument']];
+                if (isset($instruments_map[$instrument_collection['field_instrument']])) {
+                    $current_instrument_title = $instruments_map[$instrument_collection['field_instrument']];
                 } else {
-                    CMSUtils::println('%s doesn\'t have a mapped title', $instrument_collection['field_species_instrument']);
+                    CMSUtils::println('%s doesn\'t have a mapped title', $instrument_collection['field_instrument']);
                     continue;
                 }
                 $entities = $query->entityCondition('entity_type', 'node')
@@ -695,7 +695,7 @@ function drush_cms_fix_species_instruments_1730($data_file_path, $instruments_ma
             if (isset($node->field_species_instruments[LANGUAGE_NONE])) {
                 foreach ($node->field_species_instruments[LANGUAGE_NONE] as $field_collection) {
                     $field_collection = field_collection_item_load($field_collection['value']);
-                    $existing_instruments[]= $field_collection->field_species_instrument[LANGUAGE_NONE][0]['target_id'];
+                    $existing_instruments[]= $field_collection->field_instrument[LANGUAGE_NONE][0]['target_id'];
                 }
             }
             $new_instruments_ids = array_unique(array_diff($imported_instruments_ids, $existing_instruments));
@@ -703,7 +703,7 @@ function drush_cms_fix_species_instruments_1730($data_file_path, $instruments_ma
             foreach ($new_instruments_ids as $nid) {
                 $new_fc = array();
                 $new_fc['field_name'] = 'field_species_instruments';
-                $new_fc['field_species_instrument'][LANGUAGE_NONE][0]['target_id'] = $nid;
+                $new_fc['field_instrument'][LANGUAGE_NONE][0]['target_id'] = $nid;
                 if (isset($imported_instruments[$nid]['field_species_instrument_date']) && (!empty($imported_instruments[$nid]['field_species_instrument_date']))) {
                     $new_fc['field_species_instrument_date'][LANGUAGE_NONE][0]['value'] = $imported_instruments[$nid]['field_species_instrument_date'];
                 }
