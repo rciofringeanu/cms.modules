@@ -198,8 +198,7 @@ function random_species_set_values_random_with_cck($species) {
             $species_values['image_type'] = 'cck';
             $species_values['nid'] = $item->nid;
             $species_values['title'] = $item->title;
-            //cache_set('random_species', $species_values, variable_get('random_species_cache')*24*3600);
-            cache_set('random_species', $species_values, variable_get('random_species_cache'));
+            cache_set('random_species', $species_values, variable_get('random_species_cache')*24*3600);            
         }
     }
     return $species_values;
@@ -234,8 +233,7 @@ function random_species_set_values_random_species($result){
                 $species_values['image_type'] = $image_type;
                 $species_values['nid'] = $item->nid;
                 $species_values['title'] = $item->title;
-                //cache_set('random_species', $species_values, variable_get('random_species_cache')*24*3600);
-                cache_set('random_species', $species_values, variable_get('random_species_cache'));
+                cache_set('random_species', $species_values, variable_get('random_species_cache')*24*3600);                
             }
             break;
         }
