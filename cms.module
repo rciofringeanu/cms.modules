@@ -211,7 +211,7 @@ function get_available_tabs($node = NULL, $content_type = '') {
                 if (array_key_exists($node->language, $instruments)) {
                     foreach ($instruments[$node->language] as $value) {
                         $ob = field_collection_item_load($value['value']);
-                        $instrument_id = cms_extract_single_value($ob->field_species_instrument, $node->language, 'target_id');
+                        $instrument_id = cms_extract_single_value($ob->field_instrument, $node->language, 'target_id');
                         $instrument = strtolower(CMSLegalInstrument::cms_instrument_title_by_id($instrument_id));
                         if (($instrument != $current_profile) && (in_array($instrument, array_keys($websites)))) {
                             $tabs['available'][$instrument] = $websites[$instrument];
@@ -1416,7 +1416,7 @@ class CMSBase {
             ->entityCondition('entity_type', 'node')
             ->propertyCondition('type', 'project')
             ->propertyCondition('status', NODE_PUBLISHED)
-            ->fieldCondition('field_project_instrument', 'target_id', $id_country, '=')
+            ->fieldCondition('field_instrument', 'target_id', $id_country, '=')
             ->execute();
         if(!empty($query['node'])) {
             $ret = node_load_multiple(array_keys($query['node']));
