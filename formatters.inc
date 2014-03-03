@@ -442,7 +442,7 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                     $element[$delta]['text'] = $value;
                 }else {
                     $ob = field_collection_item_load($value['value']);
-                    $instrument_id = cms_extract_single_value($ob->field_species_instrument, $langcode, 'target_id');
+                    $instrument_id = cms_extract_single_value($ob->field_instrument, $langcode, 'target_id');
                     $instrument = CMSLegalInstrument::cms_instrument_title_by_id($instrument_id);
                     $element[$delta]['instrument'] = $instrument;
                     $date = strtotime(cms_extract_single_value($ob->field_species_instrument_date, $langcode, 'value'));
@@ -480,14 +480,14 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
             foreach ($items as $delta => $value) {
                 if (array_key_exists('value', $value)) {
                     $ob = field_collection_item_load($value['value']);
-                    $instrument_id = cms_extract_single_value($ob->field_species_pop_li, $langcode, 'target_id');
+                    $instrument_id = cms_extract_single_value($ob->field_instrument, $langcode, 'target_id');
                     $instrument = @entity_load('node', array($instrument_id));
                     $element[$delta]['instrument'] = $instrument[$instrument_id];
                     $element[$delta]['value'] = cms_extract_single_value($ob->field_species_pop_v, $langcode, 'value');
                     $element[$delta]['ob'] = $ob;
                 }else {
                     $ob = $value;
-                    $element[$delta]['instrument'] = $ob['field_species_pop_li'];
+                    $element[$delta]['instrument'] = $ob['field_instrument'];
                     $element[$delta]['value'] = $ob['field_species_pop_v'];
                     $element[$delta]['ob'] = $ob;
                 }
