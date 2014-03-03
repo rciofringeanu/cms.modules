@@ -185,6 +185,7 @@ function cms_node_prepare($node) {
     if (!empty($domain) && !strpos($domain['subdomain'], 'manage')) {
         if (in_array($node->type, $redirect_content_types)) {
             $manage_domain_id = db_query("SELECT domain_id FROM {domain} WHERE machine_name LIKE '%_manage' ")->fetchField();
+            unset($_GET['destination']);
             $manage = domain_load($manage_domain_id);
             $path = domain_get_uri($manage);
             drupal_goto($path);
