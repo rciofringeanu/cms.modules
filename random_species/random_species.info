@@ -1,0 +1,7 @@
+name = Random Species
+description = Block module that display random species
+core = 7.x
+package = CMS
+version = 7.x-1.0
+project = random_species
+configure = admin/config/media/random_species

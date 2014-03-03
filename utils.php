@@ -1456,4 +1456,34 @@ final class CMSUtils {
             unset($data['count']);
         }
     }
+    
+    /**
+     * Automatically retrive species' image gallery from Arkive.org website
+     */
+    public static function get_images_from_arkive($node_title){
+        $gallery = array();
+        $species_title_slug = self::slug($node_title);
+
+        $api_key = variable_get('arkive_api_key');
+        $url = 'http://www.arkive.org/api/' . $api_key . '/portlet/latin/' . $species_title_slug . '/10';
+        $curl_handler = curl_init();
+
+        curl_setopt($curl_handler, CURLOPT_URL, $url);
+        curl_setopt($curl_handler,CURLOPT_CONNECTTIMEOUT,2);
+        curl_setopt($curl_handler, CURLOPT_RETURNTRANSFER, 1);
+
+        $data = curl_exec($curl_handler);
+
+        if (!curl_errno($curl_handler)) {
+            $data = json_decode($data);
+
+            if (is_object($data) && empty($data->error)) {
+                $gallery = $data->results;
+            }
+        }
+
+        curl_close($curl_handler);
+        
+        return $gallery;
+    }
 }
