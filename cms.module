@@ -1471,8 +1471,10 @@ class CMSBase {
             $view_bundle->set_display($view_display);
             $view_bundle->set_arguments(array($node->nid));
             $view_bundle->execute();
-            $related_data['count'] = $view_bundle->total_rows;
-            $node->related_data[$bundle] = $related_data;
+            if ($view_bundle->total_rows > 0) {
+                $related_data['count'] = $view_bundle->total_rows;
+                $node->related_data[$bundle] = $related_data;
+            }
         }
     }
 }
