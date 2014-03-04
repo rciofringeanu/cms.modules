@@ -8,7 +8,7 @@
                     <?php echo $images[0];
                     unset($images[0]); ?>
                 <?php elseif ('cck' == $image_type): ?>
-                    <img src="<?php echo file_create_url($images['und'][0]['uri']); ?>" alt="" title="" class="species-custom-image" />                                    
+                    <img src="<?php echo file_create_url($images[0]['uri']); ?>" alt="" title="" class="species-custom-image" />                                    
                 <?php endif; ?>                
             </div>
             <?php if(count($images) > 1): ?>                
