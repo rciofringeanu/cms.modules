@@ -293,6 +293,23 @@ function render_tab_view($title = '', $href = '', $class = '', $counter = 0) {
     ));
 }
 
+function render_tab_content_view($id = '', $class = '', $view_name, $view_display, $arg) {
+    $template_path = drupal_get_path('theme', $GLOBALS['theme']) . _DS_ . implode(_DS_, array(
+            'templates',
+            'slots',
+            'general',
+            'tab_content_view.tpl.php'
+        ));
+
+    echo theme_render_template($template_path, array(
+        'id' => $id,
+        'class' => $class,
+        'view_name' => $view_name,
+        'view_display' => $view_display,
+        'arg' => $arg,
+    ));
+}
+
 function is_theme_admin() {
     if ($GLOBALS['theme'] == 'cms_theme') {
         return true;
@@ -1440,6 +1457,22 @@ class CMSBase {
                     self::set_field_taxonomic_term($node, $field['field_name'], $field['vocabulary'], $data);
                 }
             }
+        }
+    }
+
+    public static function set_related_content_from_views(&$node, $bundle, $view_name, $view_display) {
+        $view_bundle = views_get_view($view_name);
+        if ($view_bundle && $view_bundle->access($view_display)) {
+            $node->related_content[$bundle];
+            $related_data = array();
+            $related_data['count'] = 0;
+            $related_data['view_name'] = $view_name;
+            $related_data['view_display'] = $view_display;
+            $view_bundle->set_display($view_display);
+            $view_bundle->set_arguments(array($node->nid));
+            $view_bundle->execute();
+            $related_data['count'] = $view_bundle->total_rows;
+            $node->related_data[$bundle] = $related_data;
         }
     }
 }
