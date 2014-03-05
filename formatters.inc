@@ -568,7 +568,7 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                         $status = $allowed_values[$status];
                     }
                     $element[$delta]['status'] = $status;
-
+                    $element[$delta]['url'] = url('node/'.$country->nid);
                 }else {
                     $element[$delta]['country'] = $ob['field_species_range_state'];
                     $element[$delta]['territories'] = $ob['field_species_territories'];
@@ -1135,6 +1135,12 @@ function theme_cms_range_state_formatter($variables) {
             $ret[] = $v;
         }
         asort($ret);
+        foreach ($ret as $idx => &$country) {
+            $ob = $item[$idx];
+            if (array_key_exists('url', $ob)) {
+                $country = "<a href='".$ob['url']."' target='_blank'>".$country."</a>";
+            }
+        }
         return implode(', ', $ret);
     }
 }
