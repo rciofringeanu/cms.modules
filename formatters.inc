@@ -657,14 +657,14 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                     $ob = field_collection_item_load($value['value']);
                     if ($ob) {
                         $ob = field_collection_item_load($value['value']);
-                        $country_nid = cms_extract_single_value($ob->field_species_status_country, $langcode, 'target_id');
+                        $country_nid = cms_extract_single_value($ob->field_country, $langcode, 'target_id');
                         $country = node_load($country_nid);
                         $element[$delta]['country'] = (!empty($country)) ? $country : '';
                         $status = (property_exists($ob, 'field_species_aewa_status')) ? taxonomy_term_load($ob->field_species_aewa_status[$langcode][0]['tid']) : '';
                         $element[$delta]['status'] = (is_object($status) && property_exists($status, 'name')) ? $status->name : '';
                     }
                 }else {
-                    $element[$delta]['country'] = $value['field_species_status_country'];
+                    $element[$delta]['country'] = $value['field_country'];
                     $element[$delta]['status'] = $value['field_species_aewa_status'];
                 }
             }
