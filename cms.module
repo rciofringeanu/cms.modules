@@ -1464,7 +1464,6 @@ class CMSBase {
     public static function set_related_content_from_views(&$node, $bundle, $view_name, $view_display) {
         $view_bundle = views_get_view($view_name);
         if ($view_bundle && $view_bundle->access($view_display)) {
-            $node->related_content[$bundle];
             $related_data = array();
             $related_data['count'] = 0;
             $related_data['view_name'] = $view_name;
