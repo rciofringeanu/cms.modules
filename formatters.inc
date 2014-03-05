@@ -554,7 +554,7 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
             foreach ($items as $delta => $value) {
                 if (array_key_exists('value', $value)) {
                     $ob = field_collection_item_load($value['value']);
-                    $country_nid = cms_extract_single_value($ob->field_species_range_state, $langcode, 'target_id');
+                    $country_nid = cms_extract_single_value($ob->field_country, $langcode, 'target_id');
                     $country = node_load($country_nid);
                     $element[$delta]['country'] = ($country) ? $country->title : '';
                     $element[$delta]['territories'] = cms_extract_single_value($ob->field_species_territories, $langcode, 'value');
@@ -569,7 +569,7 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                     }
                     $element[$delta]['status'] = $status;
                 }else {
-                    $element[$delta]['country'] = $ob['field_species_range_state'];
+                    $element[$delta]['country'] = $ob['field_country'];
                     $element[$delta]['territories'] = $ob['field_species_territories'];
                     $element[$delta]['status'] = $ob['field_species_range_state_status'];
                 }
@@ -1097,8 +1097,8 @@ function theme_cms_range_state_formatter($variables) {
             $country = '';
             if (array_key_exists('country', $ob)) {
                 $country = $ob['country'];
-            }elseif (array_key_exists('field_species_range_state', $ob)) {
-                $country = $ob['field_species_range_state'];
+            }elseif (array_key_exists('field_country', $ob)) {
+                $country = $ob['field_country'];
             }
 
             if ($country) {
