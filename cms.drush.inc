@@ -527,7 +527,7 @@ function drush_cms_set_national_reports_country_1776() {
             if(array_key_exists($sb_name, $countries)) {
                 $cid = $countries[$sb_name];
                 // Assign country to the report
-                $doc->field_document_country[$doc->language][] = array('target_id' => $cid);
+                $doc->field_country[$doc->language][] = array('target_id' => $cid);
                 // Unset the 'Submitted by' field
                 $doc->field_document_submitted_by[$doc->language] = array();
                 echo "Saving node {$doc->nid}\n";
