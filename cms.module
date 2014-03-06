@@ -1477,6 +1477,24 @@ class CMSBase {
             }
         }
     }
+
+    /**
+     * Function to create slug form string
+     * @param string $string
+     * @param string $replacement
+     * @param int $max_length
+     *
+     * @return string
+     */
+    public static function cms_create_slug($string = '', $replacement = '-', $max_length = 100) {
+        // Replace with dashes anything that isn't A-Z, numbers, dashes, or underscores.
+        $slug = strtolower(preg_replace('/[^a-zA-Z0-9-]+/', $replacement, $string));
+        if (strlen($slug) > $max_length) {
+            $slug = substr($slug, 0 ,$max_length);
+        }
+        return $slug;
+    }
+
 }
 
 /**
