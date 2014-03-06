@@ -191,6 +191,7 @@ function cms_node_prepare($node) {
             drupal_goto($path);
         }
     }
+
 }
 
 /**
