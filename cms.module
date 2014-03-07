@@ -172,6 +172,23 @@ function cms_node_load($nodes, $types) {
 }
 
 /**
+ * Function to get node instrument id of the Domain
+ *
+ * @param $domain_id - Domain id for which to get instrument id that it represents
+ * @return instrument node id or FALSE
+ */
+function cms_domain_instrument_id($domain_id = NULL) {
+    if ($domain_id === NULL) {
+        $domain = domain_get_domain();
+        $domain_id = $domain['domain_id'];
+    }
+    if (!empty(CMSBase::$domain_instrument[$domain_id]['instrument'])) {
+        return CMSBase::$domain_instrument[$domain_id]['instrument'];
+    } else {
+        return FALSE;
+    }
+}
+/**
  * Implements hook_node_view($node, $view_mode, $langcode)
  * this is called when a node is loaded for add/edit form
  */
@@ -383,7 +400,93 @@ function is_current_page($menu_item) {
  */
 class CMSBase {
 
-
+    //Variable to store the link between Domain and it's instrument
+    public static $domain_instrument = array(
+        '1' => array(
+            'alias' => '',
+            'instrument' => 1,
+            ),
+        '2' => array(
+            'alias' => 'raptors',
+            'instrument' => 24,
+        ),
+        '3' => array(
+            'alias' => 'dugong',
+            'instrument' => 22,
+        ),
+        '4' => array(
+            'alias' => 'aquatic-warbler',
+            'instrument' => 15,
+        ),
+        '5' => array(
+            'alias' => 'flamingos',
+            'instrument' => 25,
+        ),
+        '6' => array(
+            'alias' => 'great-bustard',
+            'instrument' => 11,
+        ),
+        '7' => array(
+            'alias' => 'ruddy-headed-goose',
+            'instrument' => 19,
+        ),
+        '8' => array(
+            'alias' => 'siberian-crane',
+            'instrument' => 9,
+        ),
+        '9' => array(
+            'alias' => 'slender-billed-curlew',
+            'instrument' => 10,
+        ),
+        '10' => array(
+            'alias' => 'grassland-birds',
+            'instrument' => 20,
+        ),
+        '11' => array(
+            'alias' => 'atlantic-turtles',
+            'instrument' => 12,
+        ),
+        '12' => array(
+            'alias' => 'monk-seal',
+            'instrument' => 21,
+        ),
+        '13' => array(
+            'alias' => 'pacific-cetaceans',
+            'instrument' => 18,
+        ),
+        '14' => array(
+            'alias' => 'sharks',
+            'instrument' => 26,
+        ),
+        '15' => array(
+            'alias' => 'aquatic-mammals',
+            'instrument' => 23,
+        ),
+        '16' => array(
+            'alias' => 'bukhara-deer',
+            'instrument' => 14,
+        ),
+        '17' => array(
+            'alias' => 'saiga',
+            'instrument' => 17,
+        ),
+        '18' => array(
+            'alias' => 'huemul',
+            'instrument' => 27,
+        ),
+        '19' => array(
+            'alias' => 'gorilla',
+            'instrument' => 8,
+        ),
+        '20' => array(
+            'alias' => 'manage',
+            'instrument' => 1,
+        ),
+        '21' => array(
+            'alias' => 'west-african-elephants',
+            'instrument' => 16,
+        ),
+    );
     /**
      * Create a new Drupal node node instance
      *
