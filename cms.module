@@ -172,16 +172,20 @@ function cms_node_load($nodes, $types) {
 }
 
 /**
- * Function to get node instrument id of the current Domain
+ * Function to get node instrument id of the Domain
  *
+ * @param $domain_id - Domain id for which to get instrument id that it represents
  * @return instrument node id or FALSE
  */
-function cms_current_domain_instrument_id() {
-    $domain = domain_get_domain();
-    if (!empty(CMSBase::$domain_instrument[$domain['domain_id']]['instrument'])) {
-        return CMSBase::$domain_instrument[$domain['domain_id']]['instrument'];
+function cms_domain_instrument_id($domain_id = NULL) {
+    if ($domain_id === NULL) {
+        $domain = domain_get_domain();
+        $domain_id = $domain['domain_id'];
+    }
+    if (!empty(CMSBase::$domain_instrument[$domain_id]['instrument'])) {
+        return CMSBase::$domain_instrument[$domain_id]['instrument'];
     } else {
-        return false;
+        return FALSE;
     }
 }
 /**
