@@ -162,7 +162,7 @@ function cms_date_formats() {
 
 /**
  * Function to give view permissions of nodes on all domains
- * Temprorary fix for Drupal ticket https://drupal.org/node/2202171
+ * Temporary fix for Drupal ticket https://drupal.org/node/2202171
  *    - Issue: on nodes with checked "send to all affiliates" checkbox, users can't access them on any domains as it should
  *    - this functionality is needed for example in "manage" sub-domain - to access any node
  */
@@ -175,7 +175,7 @@ function cms_node_load($nodes, $types) {
  * Function to get node instrument id of the Domain
  *
  * @param $domain_id - Domain id for which to get instrument id that it represents
- * @return instrument node id or FALSE
+ * @return integer instrument node id or FALSE
  */
 function cms_domain_instrument_id($domain_id = NULL) {
     if ($domain_id === NULL) {
@@ -188,9 +188,10 @@ function cms_domain_instrument_id($domain_id = NULL) {
         return FALSE;
     }
 }
+
+
 /**
- * Implements hook_node_view($node, $view_mode, $langcode)
- * this is called when a node is loaded for add/edit form
+ * Implements hook_node_prepare($node) called when a node is loaded for add/edit form
  */
 function cms_node_prepare($node) {
 
@@ -212,7 +213,7 @@ function cms_node_prepare($node) {
 }
 
 /**
- * Implelemnts hook_views_pre_view(&$view, &$display_id, &$args)
+ * Implements hook_views_pre_view(&$view, &$display_id, &$args)
  *
  * To change arguments before any processing of the view
  * Used for ex. in Homepage Domain customization of Slideshow, Calendar, Publications Tab
@@ -245,6 +246,7 @@ function cms_views_pre_view(&$view, &$display_id, &$args) {
     }
 }
 
+
 /**
  * Impelments quicktabs_alter(&$quicktabs)
  *
@@ -260,6 +262,34 @@ function cms_quicktabs_alter(&$quicktabs) {
                 $tab['path'] = $new_path;
             }
         }
+    }
+}
+
+
+/*
+ * Implements hook_node_view($node, $view_mode, $langcode)
+ * Act on a node that is being assembled before rendering.
+ */
+function cms_node_view($node, $view_mode, $langcode){
+    switch ($node->type) {
+        case 'legal_instrument':
+            $option = array(); $markup = $selected = '';
+            $nodes = CMSBase::get_published_nodes_by_type($node->type);                      	    	
+
+            while($item = $nodes->fetchAssoc()) {
+                $selected = (isset($_GET['q']) && ('node/'.$item['nid'] == $_GET['q']))? 'selected':'';
+                $path = '/'.$langcode.'/'.drupal_lookup_path('alias','node/'.$item['nid']);
+                $option .= sprintf('<option %1s value="%2s">%3s</option>', $selected, $path, $item['title']);
+            }
+             
+            $markup .= '<form name="item_list">
+                <select name="item" id="item" onchange="if (this.value) window.location.href=this.value">'.$option.'</select>
+            </form>';
+            
+            $node->content['node_list'] = array(
+                '#markup' => $markup,
+            );
+            break;
     }
 }
 
@@ -1780,6 +1810,24 @@ class CMSBase {
 
         // transliterate
         return strtr($string, $charmap);
+    }
+    
+    /**
+     * @param $note_type
+     *   The node content type
+     * @return
+     *   An array of nodes values
+     */
+    public static function get_published_nodes_by_type($node_type, $language = 'und'){
+        $nodes = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->fields('n', array('title'))
+            ->condition('n.type', $node_type)
+            ->condition('n.status', 1)
+	    ->condition('n.language', $language)
+            ->execute();
+        
+        return $nodes;
     }
 
 }
