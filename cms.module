@@ -134,14 +134,6 @@ function cms_node_unpublish_confirm($form, &$form_state, $node) {
     );
 }
 
-/**
- * Implement hook_form_alter();
- */
-function cms_form_alter(&$form, &$form_state, $form_id) {
-    //dsm($form);
-    //dsm($form_state);
-}
-
 function cms_date_format_types() {
     variable_set('date_format_cms_date', 'd F Y');
 
@@ -273,22 +265,24 @@ function cms_quicktabs_alter(&$quicktabs) {
 function cms_node_view($node, $view_mode, $langcode){
     switch ($node->type) {
         case 'legal_instrument':
-            $option = array(); $markup = $selected = '';
-            $nodes = CMSBase::get_published_nodes_by_type($node->type);                      	    	
+            if (is_theme_frontend()) {
+                $option = array(); $markup = $selected = '';
+                $nodes = CMSBase::get_published_nodes_by_type($node->type);
 
-            while($item = $nodes->fetchAssoc()) {
-                $selected = (isset($_GET['q']) && ('node/'.$item['nid'] == $_GET['q']))? 'selected':'';
-                $path = '/'.$langcode.'/'.drupal_lookup_path('alias','node/'.$item['nid']);
-                $option .= sprintf('<option %1s value="%2s">%3s</option>', $selected, $path, $item['title']);
+                while($item = $nodes->fetchAssoc()) {
+                    $selected = (isset($_GET['q']) && ('node/'.$item['nid'] == $_GET['q']))? 'selected':'';
+                    $path = '/'.$langcode.'/'.drupal_lookup_path('alias','node/'.$item['nid']);
+                    $option .= sprintf('<option %1s value="%2s">%3s</option>', $selected, $path, $item['title']);
+                }
+
+                $markup .= '<form name="item_list">
+                    <select name="item" id="item" onchange="if (this.value) window.location.href=this.value">'.$option.'</select>
+                </form>';
+
+                $node->content['node_list'] = array(
+                    '#markup' => $markup,
+                );
             }
-             
-            $markup .= '<form name="item_list">
-                <select name="item" id="item" onchange="if (this.value) window.location.href=this.value">'.$option.'</select>
-            </form>';
-            
-            $node->content['node_list'] = array(
-                '#markup' => $markup,
-            );
             break;
     }
 }
@@ -308,11 +302,12 @@ function get_available_tabs($node = NULL, $content_type = '') {
     if ($node != NULL) {
         switch ($content_type) {
             case 'species':
+                $langcode = field_language('node', $node, 'field_species_instruments');
                 $instruments = $node->field_species_instruments;
-                if (array_key_exists($node->language, $instruments)) {
-                    foreach ($instruments[$node->language] as $value) {
+                if (array_key_exists($langcode, $instruments)) {
+                    foreach ($instruments[$langcode] as $value) {
                         $ob = field_collection_item_load($value['value']);
-                        $instrument_id = cms_extract_single_value($ob->field_instrument, $node->language, 'target_id');
+                        $instrument_id = cms_extract_single_value($ob->field_instrument, $langcode, 'target_id');
                         $instrument = strtolower(CMSLegalInstrument::cms_instrument_title_by_id($instrument_id));
                         if (($instrument != $current_profile) && (in_array($instrument, array_keys($websites)))) {
                             $tabs['available'][$instrument] = $websites[$instrument];
@@ -1811,7 +1806,7 @@ class CMSBase {
         // transliterate
         return strtr($string, $charmap);
     }
-    
+
     /**
      * @param $note_type
      *   The node content type
@@ -1826,7 +1821,7 @@ class CMSBase {
             ->condition('n.status', 1)
 	    ->condition('n.language', $language)
             ->execute();
-        
+
         return $nodes;
     }
 
