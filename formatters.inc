@@ -934,7 +934,13 @@ function theme_cms_link_formatter($variables) {
     extract($variables); // $item
     if(!empty($item['#items'])) {
         $value = $item['#items'][0];
-        return sprintf('<tr><th>%s</th><td><a href="%s">%s</a></td></tr>', $item['#title'], $value['uri'], $value['title']);
+        $uri = '';
+        if (!empty($value['uri'])) {
+            $uri = $value['uri'];
+        } else if (!empty($value['url'])) {
+            $uri = $value['url'];
+        }
+        return sprintf('<tr><th>%s</th><td><a href="%s">%s</a></td></tr>', $item['#title'], $uri, $value['title']);
     }
 }
 
