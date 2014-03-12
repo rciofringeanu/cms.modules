@@ -727,8 +727,8 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                     if ($ob) {
                         $ob = field_collection_item_load($value['value']);
                         $threat = NULL;
-                        if (!empty($ob->field_species_threat)) {
-                            $threat = taxonomy_term_load($ob->field_species_threat[$langcode][0]['tid']);
+                        if (!empty($ob->field_threats)) {
+                            $threat = taxonomy_term_load($ob->field_threats[$langcode][0]['tid']);
                         }
 
                         $element[$delta]['threat'] = '';
@@ -742,7 +742,7 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                         }
                     }
                 }else {
-                    $element[$delta]['threat'] = $value['field_species_threat'];
+                    $element[$delta]['threat'] = $value['field_threats'];
                     $element[$delta]['notes'] = $value['field_species_threat_notes'];
                 }
             }
