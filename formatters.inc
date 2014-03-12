@@ -481,10 +481,16 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                 if (array_key_exists('value', $value)) {
                     $ob = field_collection_item_load($value['value']);
                     $instrument_id = cms_extract_single_value($ob->field_instrument, $langcode, 'target_id');
-                    $instrument = @entity_load('node', array($instrument_id));
-                    $element[$delta]['instrument'] = $instrument[$instrument_id];
-                    $element[$delta]['value'] = cms_extract_single_value($ob->field_species_pop_v, $langcode, 'value');
-                    $element[$delta]['ob'] = $ob;
+                    if (!empty($instrument_id)) {
+                        $instrument = @entity_load('node', array($instrument_id));
+                        $element[$delta]['instrument'] = $instrument[$instrument_id];
+                        $element[$delta]['value'] = cms_extract_single_value($ob->field_species_pop_v, $langcode, 'value');
+                        $element[$delta]['ob'] = $ob;
+                    } else {
+                        $element[$delta]['instrument'] = '';
+                        $element[$delta]['value'] = '';
+                        $element[$delta]['ob'] = $ob;
+                    }
                 }else {
                     $ob = $value;
                     $element[$delta]['instrument'] = $ob['field_instrument'];
@@ -928,7 +934,13 @@ function theme_cms_link_formatter($variables) {
     extract($variables); // $item
     if(!empty($item['#items'])) {
         $value = $item['#items'][0];
-        return sprintf('<tr><th>%s</th><td><a href="%s">%s</a></td></tr>', $item['#title'], $value['uri'], $value['title']);
+        $uri = '';
+        if (!empty($value['uri'])) {
+            $uri = $value['uri'];
+        } else if (!empty($value['url'])) {
+            $uri = $value['url'];
+        }
+        return sprintf('<tr><th>%s</th><td><a href="%s">%s</a></td></tr>', $item['#title'], $uri, $value['title']);
     }
 }
 
