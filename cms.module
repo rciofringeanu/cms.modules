@@ -265,8 +265,7 @@ function cms_quicktabs_alter(&$quicktabs) {
 function cms_node_view($node, $view_mode, $langcode){
     switch ($node->type) {
         case 'legal_instrument':
-            if (is_theme_frontend()) {
-                drupal_add_js(drupal_get_path('module', 'cms') .'/js/cms.js');
+            if (is_theme_frontend()) {                
                 $options = array();
                 $value = (isset($_GET['q']))? '/'.$langcode.'/'.drupal_lookup_path('alias', $_GET['q']) : '';
                 $nodes = CMSBase::get_published_nodes_by_type($node->type);                
@@ -282,20 +281,17 @@ function cms_node_view($node, $view_mode, $langcode){
                     '#value' => $value,
                     '#attributes' => array('name' => 'item', 'id' => 'item')
                 );
-                $select = drupal_render($select_options);
+                
                 //render form
                 $form_options = array(
                     '#theme' => 'form',
                     '#method' => 'POST',
-                    '#children' => $select,
+                    '#children' => drupal_render($select_options),
                     '#attributes' => array('name' => 'item_list', 'id' => 'item_list'),
-                    
-                );
-                $form = drupal_render($form_options);               
+                    '#attached' => array('js' => array(drupal_get_path('module', 'cms') .'/js/cms.js')),
+                );                
                 
-                $node->content['node_list'] = array(
-                    '#markup' => $form,
-                );
+                $node->content['instrument_list'] = $form_options;
             }
             break;
     }
