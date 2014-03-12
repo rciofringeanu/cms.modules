@@ -275,18 +275,23 @@ function cms_node_view($node, $view_mode, $langcode){
                     $path = '/'.$langcode.'/'.drupal_lookup_path('alias','node/'.$item['nid']);                    
                     $options[$path] = $item['title'];
                 }
-                
-                $select = theme('select',array('element' => array(
+                //render dropdown
+                $select_options = array(
+                    '#theme' => 'select',                     
                     '#options' => $options,
                     '#value' => $value,
-                    '#attributes' => array('name' => 'item', 'id' => 'item'),
-                )));
-                
-                $form = theme('form', array('element' => array(                    
+                    '#attributes' => array('name' => 'item', 'id' => 'item')
+                );
+                $select = drupal_render($select_options);
+                //render form
+                $form_options = array(
+                    '#theme' => 'form',
                     '#method' => 'POST',
                     '#children' => $select,
                     '#attributes' => array('name' => 'item_list', 'id' => 'item_list'),
-                )));               
+                    
+                );
+                $form = drupal_render($form_options);               
                 
                 $node->content['node_list'] = array(
                     '#markup' => $form,
