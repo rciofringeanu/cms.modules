@@ -238,6 +238,25 @@ function cms_views_pre_view(&$view, &$display_id, &$args) {
     }
 }
 
+/**
+ * Implements hook_views_pre_render(&$view)
+ * 
+ * @param type $view
+ */
+function cms_views_pre_render(&$view) {
+    switch ($view->name) {
+        case 'cms_instruments_slideshow':
+            foreach ($view->result as &$result) {
+                foreach ($result->field_field_picture as &$image) {
+                    $image['alter']['path'] = 'path';
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 
 /**
  * Impelments quicktabs_alter(&$quicktabs)
