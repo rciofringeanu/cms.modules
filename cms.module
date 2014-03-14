@@ -1,6 +1,7 @@
 <?php
 
 module_load_include('inc', 'cms', 'formatters');
+module_load_include('inc', 'cms', 'cms.api');
 
 /**
  * Path where the administration templates will be mapped
@@ -284,23 +285,23 @@ function cms_quicktabs_alter(&$quicktabs) {
 function cms_node_view($node, $view_mode, $langcode){
     switch ($node->type) {
         case 'legal_instrument':
-            if (is_theme_frontend()) {                
+            if (is_theme_frontend()) {
                 $options = array();
                 $value = (isset($_GET['q']))? '/'.$langcode.'/'.drupal_lookup_path('alias', $_GET['q']) : '';
-                $nodes = CMSBase::get_published_nodes_by_type($node->type);                
+                $nodes = CMSBase::get_published_nodes_by_type($node->type);
 
                 while($item = $nodes->fetchAssoc()) {
-                    $path = '/'.$langcode.'/'.drupal_lookup_path('alias','node/'.$item['nid']);                    
+                    $path = '/'.$langcode.'/'.drupal_lookup_path('alias','node/'.$item['nid']);
                     $options[$path] = $item['title'];
                 }
                 //render dropdown
                 $select_options = array(
-                    '#theme' => 'select',                     
+                    '#theme' => 'select',
                     '#options' => $options,
                     '#value' => $value,
                     '#attributes' => array('name' => 'item', 'id' => 'item')
                 );
-                
+
                 //render form
                 $form_options = array(
                     '#theme' => 'form',
@@ -308,8 +309,8 @@ function cms_node_view($node, $view_mode, $langcode){
                     '#children' => drupal_render($select_options),
                     '#attributes' => array('name' => 'item_list', 'id' => 'item_list'),
                     '#attached' => array('js' => array(drupal_get_path('module', 'cms') .'/js/cms.js')),
-                );                
-                
+                );
+
                 $node->content['instrument_list'] = $form_options;
             }
             break;
