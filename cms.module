@@ -1848,7 +1848,8 @@ class CMSBase {
             ->fields('n', array('title'))
             ->condition('n.type', $node_type)
             ->condition('n.status', 1)
-	    ->condition('n.language', $language)
+            ->condition('n.language', $language)
+            ->orderBy('n.title')
             ->execute();
 
         return $nodes;
