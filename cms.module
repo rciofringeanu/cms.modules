@@ -205,40 +205,6 @@ function cms_node_prepare($node) {
 
 }
 
-/**
- * Implements hook_views_pre_view(&$view, &$display_id, &$args)
- *
- * To change arguments before any processing of the view
- * Used for ex. in Homepage Domain customization of Slideshow, Calendar, Publications Tab
- */
-function cms_views_pre_view(&$view, &$display_id, &$args) {
-    switch ($view->name) {
-        case 'quicktab_publications':
-            if ($display_id == 'publications_homepage_tab') {
-                $instrument_id = cms_domain_instrument_id();
-                if ($instrument_id) {
-                    $args []= $instrument_id;
-                }
-            }
-            break;
-        case 'news_slideshow':
-            if ($display_id == 'block') {
-                $instrument_id = cms_domain_instrument_id();
-                if ($instrument_id) {
-                    $args []= $instrument_id;
-                }
-            }
-            break;
-        case 'calendar':
-            $instrument_id = cms_domain_instrument_id();
-            if ($instrument_id) {
-                // Set arg[1] because the first is a date argument that is added later
-                $args[1] = $instrument_id;
-            }
-            break;
-    }
-}
-
 
 /**
  * Impelments quicktabs_alter(&$quicktabs)
@@ -1927,4 +1893,3 @@ function cms_update_7000() {
         watchdog('news', "Unable to load role name '@role'", array("@role" => ROLE_CONTENT_MANAGER), WATCHDOG_WARNING);
     }
 }
-
