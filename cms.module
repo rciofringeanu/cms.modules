@@ -202,8 +202,8 @@ function cms_node_prepare($node) {
             drupal_goto($path);
         }
     }
-
 }
+
 
 /**
  * Impelments quicktabs_alter(&$quicktabs)
