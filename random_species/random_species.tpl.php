@@ -1,14 +1,16 @@
-<?php if(!empty($nid) && !empty($images)): ?>    
+<?php if(!empty($nid) && !empty($images)): ?> 
+    <?php $no_images = count($images); ?>
     <div id="myCarousel" class="carousel slide img-polaroid species-carousel">
         <!-- Carousel items -->
-        <?php if(count($images) > 1): ?><a class="carousel-control left" href="#myCarousel" data-slide="prev">&lsaquo;</a><?php endif; ?>
+        <?php if($no_images > 1): ?><a class="carousel-control left" href="#myCarousel" data-slide="prev">&lsaquo;</a><?php endif; ?>
         <div class="carousel-inner">
             <div class="active item">                    
                 <?php if ('arkive' == $image_type): ?>
                     <?php echo $images[0];
                     unset($images[0]); ?>
                 <?php elseif ('cck' == $image_type): ?>
-                    <img src="<?php echo file_create_url($images[0]['raw']['uri']); ?>" alt="" title="" class="species-custom-image" />                                    
+                    <img src="<?php echo file_create_url($images[0]['raw']['uri']); ?>" alt="" title="" class="species-custom-image" />
+                    <?php unset($images[0]); ?>
                 <?php endif; ?>                
             </div>
             <?php if(count($images) > 1): ?>                
@@ -23,7 +25,7 @@
                 <?php endforeach; ?>                
             <?php endif; ?>
         </div>
-        <?php if(count($images) > 1): ?><a class="carousel-control right" href="#myCarousel" data-slide="next">&rsaquo;</a><?php endif; ?>
+        <?php if($no_images > 1): ?><a class="carousel-control right" href="#myCarousel" data-slide="next">&rsaquo;</a><?php endif; ?>
     </div> 
     <p class="species-custom-image-author"><?php echo l($title, drupal_lookup_path('alias', 'node/'.$nid)); ?></p>
 <?php endif; ?>

@@ -81,8 +81,14 @@ function random_species_form($form, &$form_state) {
             30 => 'one month',
         ),
     );
+    
+    $form['#submit'][] = 'random_species_form_handler';
 
     return system_settings_form($form);
+}
+
+function random_species_form_handler($form, &$form_state){
+    cache_clear_all('random_species');
 }
 
 /**
