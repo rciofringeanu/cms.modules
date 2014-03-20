@@ -178,6 +178,11 @@ function cms_field_formatter_info() {
             'label' => t('Threats'),
             'field types' => array('field_collection')
         ),
+        'cms_entityreference_entity_uuid' => array(
+            'label' => t('Entity reference UUID'),
+            'description' => t('Display the UUID of the referenced entities.'),
+            'field types' => array('entityreference'),
+        ),
     );
 }
 
@@ -306,6 +311,8 @@ function cms_field_formatter_settings_summary($field, $instance, $view_mode) {
             return t('Renderer for CMS Appendix field');
         case 'cms_date_formatter':
             return t('Render date field');
+        case 'cms_entityreference_entity_uuid':
+            return t('UUID of the referenced entities');
         default:
             break;
     }
@@ -744,6 +751,24 @@ function cms_field_formatter_view($entity_type, $entity, $field, $instance, $lan
                 }else {
                     $element[$delta]['threat'] = $value['field_threats'];
                     $element[$delta]['notes'] = $value['field_species_threat_notes'];
+                }
+            }
+            break;
+        case 'cms_entityreference_entity_uuid':
+            if(count($items)) {
+                $nids = array();
+                foreach ($items as $item) {
+                    $nids[] = $item['target_id'];
+                }
+                $uuids = db_select('node', 'n')
+                    ->fields('n', array('nid', 'uuid'))
+                    ->condition('n.nid', $nids, 'IN')
+                    ->execute()->fetchAllAssoc('nid');
+                if(count($uuids)) {
+                    foreach ($items as $delta => $item) {
+                        $v = $uuids[$item['target_id']];
+                        $element[$delta] = array('#markup' => $v->uuid);
+                    }
                 }
             }
             break;
