@@ -130,8 +130,8 @@ function random_species_block_view($delta = '') {
 /**
  * Get all species
  */
-function random_species_get_all_species() {     
-    $view = views_get_view_result('front_end_species', 'random_species', domain_get_domain()['domain_id']);
+function random_species_get_all_species() {    
+    $view = views_get_view_result('front_end_species', 'random_species', random_species_get_instrument(domain_get_domain()['domain_id']));
     
     return $view;
 }
@@ -248,7 +248,7 @@ function random_species_set_values_random_species($result){
  */
 function random_species_get_species_with_cck_image(){            
     //get species from a view page
-    $view = views_get_view_result('front_end_species', 'random_species_with_images', domain_get_domain()['domain_id']);
+    $view = views_get_view_result('front_end_species', 'random_species_with_images', random_species_get_instrument(domain_get_domain()['domain_id']));
     shuffle($view);          
                 
     return $view;        
@@ -258,7 +258,7 @@ function random_species_get_species_with_cck_image(){
  * Get selected species
  */
 function random_species_get_selected_species($species_id = 0){    
-    $view = views_get_view_result('front_end_species', 'random_species', domain_get_domain()['domain_id']);
+    $view = views_get_view_result('front_end_species', 'random_species', random_species_get_instrument(domain_get_domain()['domain_id']));
     if (!empty($species_id)){ //selected species
         $view = array_filter($view, function($item) use($species_id){
             return ($item->nid == $species_id);        
@@ -281,4 +281,11 @@ function random_species_theme(){
             'template' => 'random_species',
          ),
     );
+}
+
+/**
+ * Get instrument by domanin
+ */
+function random_species_get_instrument($domain_id){
+    return CMSBase::$domain_instrument[$domain_id]['instrument'];
 }
