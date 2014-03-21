@@ -16,7 +16,10 @@ module_load_include('php', 'cms', 'utils');
 function random_species_help($path, $arg) {
     switch ($path) {
         case 'admin/config/media/random_species':
-            return '<p>' . t('Cache clear ...') . '</p>';
+            return '<p>' . t('This module allows you to select a particular species '
+                    . 'or one random. For the random selected, '
+                    . 'you can specify whether to show only those that have an image set. '
+                    . 'Otherwise, the pictures will be displayed from Arkive.') . '</p>';
     }
 }
 
@@ -87,8 +90,12 @@ function random_species_form($form, &$form_state) {
     return system_settings_form($form);
 }
 
+/*
+ * Custom submit form handler
+ * Clear random_species cache
+ */
 function random_species_form_handler($form, &$form_state){
-    cache_clear_all('random_species');
+    cache_clear_all('random_species', 'cache');
 }
 
 /**
@@ -123,8 +130,8 @@ function random_species_block_view($delta = '') {
 /**
  * Get all species
  */
-function random_species_get_all_species() {       
-    $view = views_get_view_result('front_end_species', 'random_species', array(domain_get_domain()['domain_id']));
+function random_species_get_all_species() {     
+    $view = views_get_view_result('front_end_species', 'random_species', domain_get_domain()['domain_id']);
     
     return $view;
 }
@@ -241,7 +248,7 @@ function random_species_set_values_random_species($result){
  */
 function random_species_get_species_with_cck_image(){            
     //get species from a view page
-    $view = views_get_view_result('front_end_species', 'random_species_with_images', array(domain_get_domain()['domain_id']));
+    $view = views_get_view_result('front_end_species', 'random_species_with_images', domain_get_domain()['domain_id']);
     shuffle($view);          
                 
     return $view;        
@@ -251,7 +258,7 @@ function random_species_get_species_with_cck_image(){
  * Get selected species
  */
 function random_species_get_selected_species($species_id = 0){    
-    $view = views_get_view_result('front_end_species', 'random_species', array(domain_get_domain()['domain_id']));
+    $view = views_get_view_result('front_end_species', 'random_species', domain_get_domain()['domain_id']);
     if (!empty($species_id)){ //selected species
         $view = array_filter($view, function($item) use($species_id){
             return ($item->nid == $species_id);        
