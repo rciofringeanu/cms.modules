@@ -61,11 +61,12 @@ function datatables_library() {
             'version' => '1.9',
             'js' => array(
                 $lib_path . '/media/js/jquery.dataTables.js' => array(),
+                $lib_path . '/media/js/dataTables.bootstrap.js' => array(),
                 drupal_get_path('module', 'datatables') . '/js/datatables.js' => array(),
-                drupal_get_path('module', 'datatables') . '/js/DT_bootstrap.js' => array(),
             ),
             'css' => array(
                 $lib_path . '/media/css/demo_table.css' => array(),
+                $lib_path . '/media/css/dataTables.bootstrap.css' => array()
             ),
         );
     }
