@@ -1,0 +1,193 @@
+<?php
+/**
+ * @file
+ * Code for the CMS Menu position Module.
+ *
+ * @author Dragos Dumitrescu
+ *
+ */
+
+$cms_menu_position_menu_active = null;
+
+/*
+ * Implements hook_node_view($node, $view_mode, $langcode)
+ * Act on a node that is being assembled before rendering.
+ *
+ * To search for connection between current node type and Menu link
+ */
+function cms_menu_position_node_view($node, $view_mode, $langcode){
+
+    if (!empty(CMS_Menu_Position::$node_type_field_type[$node->type])) {
+        cms_menu_position_lookup_active_menu($node, CMS_Menu_Position::$node_type_field_type[$node->type]['field_type']);
+    }
+
+}
+
+/**
+ * Implements hook_form_menu_edit_item_alter().
+ *
+ * add field to link a Content Type Type(field type) to the menu link
+ */
+function cms_menu_position_form_menu_edit_item_alter(&$form, &$form_state) {
+
+    $content_types = CMS_Menu_Position::get_node_type_options();
+
+    $default_value = (!empty($form['options']['#value']['cms_node_type']))
+        ? $form['options']['#value']['cms_node_type'] : 0;
+
+    $form['cms_node_type'] = array (
+        '#type' => 'select',
+        '#title' => t('Content Type'),
+        '#description' => 'Select content types that you want to connect with this menu (active and breadcrumb)',
+        '#multiple' => TRUE,
+        '#options' => $content_types,
+        '#default_value' => $default_value,
+        '#attributes' => array ('class' => array('cms_node_type-chosen')),
+    );
+
+    //Adds the callback as first Submit callback, to attach data to option before saving
+    $form['#submit'] = array_merge(array("cms_menu_position_edit_menu_item_submit"), $form['#submit']);
+}
+
+
+
+/**
+ * Callback for cms_menu_position_form_menu_edit_item_alter().
+ *
+ * Sets the cms_node_type to option menu link before save
+ */
+function cms_menu_position_edit_menu_item_submit(&$form, &$form_state) {
+    if (!empty($form_state['values']['cms_node_type'])) {
+        $content_types = $form_state['values']['cms_node_type'];
+        $form_state['values']['options']['cms_node_type'] = $content_types;
+    }
+}
+
+/**
+ * Function to search for connection between node type and current domain menu links
+ *
+ * @param $node
+ * @param $field_type
+ */
+function cms_menu_position_lookup_active_menu($node, $field_type) {
+    $menu_links = cms_menu_position_menu_links_domain();
+    if (!empty($menu_links)) {
+        foreach ($menu_links as $menu_link) {
+            if (!empty($menu_link['options']['cms_node_type'])) {
+                $lng = field_language('node', $node, $field_type);
+                $type_tids = array();
+                foreach ($node->{$field_type}[$lng] as $tids) {
+                    $type_tids []= $tids['tid'];
+                }
+                $intersect = array_intersect($menu_link['options']['cms_node_type'], $type_tids);
+                if (!empty($intersect)) {
+                    global $cms_menu_position_menu_active;
+                    $cms_menu_position_menu_active = $menu_link;
+
+                    menu_tree_set_path($menu_link['menu_name'], $menu_link['link_path']);
+
+                    $menu_tree = menu_tree_all_data($menu_link['menu_name'], $menu_link);
+                    $trail = array();
+                    cms_menu_position_trail_from_menu_tree($menu_tree, $trail);
+
+                    $breadcrumb = array();
+                    $breadcrumb []= l(t('Home'), '<front>');
+                    foreach ($trail as $link) {
+                        $breadcrumb[] = l(t($link['link_title']), $link['link_path']);
+                    }
+                    $breadcrumb[] = l($menu_link['link_title'], $menu_link['link_path']);
+                    drupal_set_breadcrumb($breadcrumb);
+                }
+            }
+        }
+    }
+}
+
+function cms_menu_position_trail_from_menu_tree($menu_tree, &$trail) {
+    foreach ($menu_tree as $menu_t) {
+        if (!empty($menu_t['below'])) {
+            $trail []= array (
+                'link_title' => $menu_t['link']['link_title'],
+                'link_path' => $menu_t['link']['link_path'],
+            );
+            cms_menu_position_trail_from_menu_tree($menu_t, $trail);
+        }
+    }
+    return;
+}
+
+/**
+ * Function to return the current domain menu links
+ *
+ * @return array
+ */
+function cms_menu_position_menu_links_domain() {
+    global $_domain;
+    $domain = $_domain;
+    // Ensure that we have a menu block.
+    $menu_names = array();
+    $dmbs = domain_menu_block_load_multiple();
+    if (empty($dmbs)) {
+        return;
+    }
+
+    // Query to generate the list.
+    foreach ($dmbs as $dmb) {
+        $menu_names[] = domain_menu_block_menu_name($dmb, $domain);
+    }
+    $result = db_select('menu_custom')
+        ->fields('menu_custom', array('menu_name', 'title', 'description'))
+        ->condition('menu_name', $menu_names, 'IN')
+        ->execute();
+
+    $menu_links = array();
+    foreach ($result as $menu) {
+        $menu_links = array_merge($menu_links, menu_load_links($menu->menu_name));
+    }
+    return $menu_links;
+}
+
+class CMS_Menu_Position {
+
+    public static $node_type_field_type = array(
+        "legal_instrument" => array(
+                "field_type" => "field_instrument_status",
+                "voc" => "instrument_status",
+                "title" => "Instrument",
+            ),
+        "document" => array(
+            "field_type" => "field_document_type",
+            "voc" => "document_type",
+            "title" => "Document",
+        ),
+        "meeting" => array(
+            "field_type" => "field_meeting_type",
+            "voc" => "meeting_type",
+            "title" => "Meeting",
+        ),
+        "project" => array(
+            "field_type" => "field_project_type",
+            "voc" => "project_type",
+            "title" => "Project",
+        ),
+        "publication" => array(
+            "field_type" => "field_publication_type",
+            "voc" => "publication_types",
+            "title" => "Publication",
+        ),
+    );
+
+    public static function get_node_type_options() {
+        $options = array();
+        foreach ( CMS_Menu_Position::$node_type_field_type as $node_type ) {
+            $type_options = array();
+            $voc = taxonomy_vocabulary_machine_name_load($node_type['voc']);
+            $terms = taxonomy_get_tree($voc->vid, 0, NULL, TRUE);
+            foreach ($terms as $term) {
+                $type_options[$term->tid] = $term->name;
+            }
+            $options[$node_type['title']] = $type_options;
+        }
+        return $options;
+    }
+}
