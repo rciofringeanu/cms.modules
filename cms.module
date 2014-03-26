@@ -443,6 +443,22 @@ function is_current_page($menu_item) {
 }
 
 /**
+ * Function used with usort / uasort to sort term by their weight
+ *
+ * @param $term1
+ * @param $term2
+ *
+ * @return int
+ */
+
+function cms_compare_term_weight($term1, $term2) {
+    if ($term1->weight == $term2->weight) {
+        return 0;
+    }
+    return ($term1->weight < $term2->weight) ? -1 : 1;
+}
+
+/**
  * This is the base class that contains code common to all modules.
  * This class contains various utility functions that can be reused in
  * other parts of the project.
