@@ -76,13 +76,13 @@
   };
 
     $(document).ready(function() {
-        if ( $('.dataTables_paginate.pagination').length > 0 ) {
+        if ( $('div.dataTables_paginate').length > 0 ) {
             if ( $('.pager').length == 1 ) {
                 $('.pager').hide();
             }else  {
-                if ( $('.pagination').length == 2 ){
+                if ($('.pagination').length == 2 ){
                     $('.pagination').each(function(){
-                        if (!$(this).is('.dataTables_paginate')) {
+                        if (!$(this).parent().is('div.dataTables_paginate')) {
                             $(this).hide();
                         }
                     });
