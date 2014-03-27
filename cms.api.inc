@@ -57,6 +57,10 @@ function cms_api_get_term($node, $field_name, $cardinality = 0) {
     return API_CMS::api_get_taxonomy_term($field_name, $node, $cardinality);
 }
 
+function cms_api_entity_get_term_($nid, $field_name, $bundle, $cardinality = 0) {
+    return API_CMS::api_entity_get_taxonomy_term($nid, $field_name, $bundle, $cardinality);
+}
+
 /**
  * Class API_CMS
  */
@@ -157,6 +161,35 @@ class API_CMS {
         return $results;
     }
 
+    static function api_get_entity_field_collection_values($nid, $bundle, $field_coll_name, $fields_map) {
+        $entity = (object) array(
+            'nid' => $nid,
+            'vid' => $nid,
+            'type' => $bundle,
+        );
+        $entities = array(
+            $nid => $entity,
+        );
+        $langcode = field_language('node', $entity, $field_coll_name);
+        $field_info = field_info_field($field_coll_name);
+        field_attach_load('node', $entities,  FIELD_LOAD_CURRENT, array('field_id' => $field_info['id']));
+        $ids = array();
+        if (!empty($entities[$nid]->{$field_coll_name}[$langcode])) {
+            foreach ($entities[$nid]->{$field_coll_name}[$langcode] as $field) {
+                $ids []= $field['value'];
+            }
+        }
+        $results = array();
+        if (!empty($ids)) {
+            $fields = entity_load('field_collection_item', $ids);
+            foreach ($fields as $field_coll) {
+                $result = API_CMS::set_api_fields_coll_field($fields_map, $field_coll, $langcode);
+                $results []= $result;
+            }
+        }
+        return $results;
+    }
+
 
     /**
      * Function to get an array of term names for a specific field
@@ -203,6 +236,41 @@ class API_CMS {
                 }
             } else {
                 $terms = taxonomy_term_load($node->{$field_name}[$langcode][0]['tid'])->name;
+            }
+        }
+        return $terms;
+    }
+
+
+    static function api_entity_get_taxonomy_term($nid, $field_name, $bundle, $cardinality = 0) {
+        $terms = null;
+        $entity = (object) array(
+            'nid' => $nid,
+            'vid' => $nid,
+            'type' => $bundle,
+        );
+        $entities = array(
+                $nid => $entity,
+        );
+        $langcode = field_language('node', $entity, $field_name);
+        $field_info = field_info_field($field_name);
+        field_attach_load('node', $entities,  FIELD_LOAD_CURRENT, array('field_id' => $field_info['id']));
+
+        if (!empty($entities[$nid]->{$field_name}[$langcode]) ) {
+            if (($field_info['cardinality'] > 1 && $cardinality > 1)
+                || ($field_info['cardinality'] > 1 && $cardinality == 0 )) {
+                $terms = array();
+                foreach ($entities[$nid]->{$field_name}[$langcode] as $term_ref) {
+                    $term = taxonomy_term_load($term_ref['tid']);
+                    if (!empty($term->name)) {
+                        $terms []= $term->name;
+                    }
+                }
+            } else {
+                $term = taxonomy_term_load($entities[$nid]->{$field_name}[$langcode][0]['tid']);
+                if (!empty($term->name)) {
+                    $terms = $term->name;
+                }
             }
         }
         return $terms;

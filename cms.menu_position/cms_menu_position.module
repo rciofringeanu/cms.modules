@@ -69,17 +69,24 @@ function cms_menu_position_edit_menu_item_submit(&$form, &$form_state) {
  * @param $node
  * @param $field_type
  */
-function cms_menu_position_lookup_active_menu($node, $field_type) {
+function cms_menu_position_lookup_active_menu($node, $field_type = null) {
     $menu_links = cms_menu_position_menu_links_domain();
     if (!empty($menu_links)) {
         foreach ($menu_links as $menu_link) {
             if (!empty($menu_link['options']['cms_node_type'])) {
-                $lng = field_language('node', $node, $field_type);
-                $type_tids = array();
-                foreach ($node->{$field_type}[$lng] as $tids) {
-                    $type_tids []= $tids['tid'];
+                //first search if connection with node bundle
+                $intersect = in_array($node->type, $menu_link['options']['cms_node_type']);
+
+                if (empty($intersect) && $field_type) {
+                    $type_tids = array();
+                    $lng = field_language('node', $node, $field_type);
+                    if (!empty($node->{$field_type}[$lng])){
+                        foreach ($node->{$field_type}[$lng] as $tids) {
+                            $type_tids []= $tids['tid'];
+                        }
+                        $intersect = array_intersect($menu_link['options']['cms_node_type'], $type_tids);
+                    }
                 }
-                $intersect = array_intersect($menu_link['options']['cms_node_type'], $type_tids);
                 if (!empty($intersect)) {
                     global $cms_menu_position_menu_active;
                     $cms_menu_position_menu_active = $menu_link;
@@ -175,16 +182,49 @@ class CMS_Menu_Position {
             "voc" => "publication_types",
             "title" => "Publication",
         ),
+        "news" => array(
+            "field_type" => "field_news_type",
+            "voc" => "news_type",
+            "title" => "News",
+        ),
+        "event_calendar" => array(
+            "field_type" => null,
+            "voc" => null,
+            "title" => "Event",
+        ),
+        "species" => array(
+            "title" => "Species",
+            "field_type" => null,
+            "voc" => null,
+        ),
+        "award" => array(
+            "title" => "Award",
+            "field_type" => null,
+            "voc" => null,
+        ),
+        "campaign" => array(
+            "title" => "Campaign",
+            "field_type" => null,
+            "voc" => null,
+        ),
+        "working_group" => array(
+            "title" => "Working Group",
+            "field_type" => null,
+            "voc" => null,
+        ),
     );
 
     public static function get_node_type_options() {
         $options = array();
-        foreach ( CMS_Menu_Position::$node_type_field_type as $node_type ) {
+        foreach ( CMS_Menu_Position::$node_type_field_type as $type => $node_type ) {
             $type_options = array();
-            $voc = taxonomy_vocabulary_machine_name_load($node_type['voc']);
-            $terms = taxonomy_get_tree($voc->vid, 0, NULL, TRUE);
-            foreach ($terms as $term) {
-                $type_options[$term->tid] = $term->name;
+            $type_options[$type] = 'Node '. $node_type['title'];
+            if (!empty($node_type['voc'])) {
+                $voc = taxonomy_vocabulary_machine_name_load($node_type['voc']);
+                $terms = taxonomy_get_tree($voc->vid, 0, NULL, TRUE);
+                foreach ($terms as $term) {
+                    $type_options[$term->tid] = $term->name;
+                }
             }
             $options[$node_type['title']] = $type_options;
         }
