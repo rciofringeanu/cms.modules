@@ -1,0 +1,7 @@
+name = CMS Menu Position
+description = Provides dropdown on menu link editing to link a menu to a content type
+core = 7.x
+package = CMS
+version = 7.x-1.0
+project = cms_menu_position
+files[] = cms_menu_position.module
