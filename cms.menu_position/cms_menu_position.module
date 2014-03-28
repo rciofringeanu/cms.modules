@@ -57,9 +57,15 @@ function cms_menu_position_form_menu_edit_item_alter(&$form, &$form_state) {
  * Sets the cms_node_type to option menu link before save
  */
 function cms_menu_position_edit_menu_item_submit(&$form, &$form_state) {
+    // if was selected in form
     if (!empty($form_state['values']['cms_node_type'])) {
         $content_types = $form_state['values']['cms_node_type'];
         $form_state['values']['options']['cms_node_type'] = $content_types;
+    } else {
+        // if removed in form, unset the existing values
+        if (!empty($form_state['values']['options']['cms_node_type'])) {
+            unset($form_state['values']['options']['cms_node_type']);
+        }
     }
 }
 
@@ -131,26 +137,33 @@ function cms_menu_position_trail_from_menu_tree($menu_tree, &$trail) {
 function cms_menu_position_menu_links_domain() {
     global $_domain;
     $domain = $_domain;
-    // Ensure that we have a menu block.
-    $menu_names = array();
-    $dmbs = domain_menu_block_load_multiple();
-    if (empty($dmbs)) {
-        return;
-    }
-
-    // Query to generate the list.
-    foreach ($dmbs as $dmb) {
-        $menu_names[] = domain_menu_block_menu_name($dmb, $domain);
-    }
-    $result = db_select('menu_custom')
-        ->fields('menu_custom', array('menu_name', 'title', 'description'))
-        ->condition('menu_name', $menu_names, 'IN')
-        ->execute();
 
     $menu_links = array();
-    foreach ($result as $menu) {
-        $menu_links = array_merge($menu_links, menu_load_links($menu->menu_name));
+
+    //on Manage domain menu is not domain-menu-block
+    if ($domain['sitename'] == 'Manage') {
+        $menu_links = menu_load_links('main-menu');
+    } else {
+        // Ensure that we have a menu block.
+        $menu_names = array();
+        $dmbs = domain_menu_block_load_multiple();
+        if (empty($dmbs)) {
+            return;
+        }
+
+        // Query to generate the list.
+        foreach ($dmbs as $dmb) {
+            $menu_names[] = domain_menu_block_menu_name($dmb, $domain);
+        }
+        $result = db_select('menu_custom')
+            ->fields('menu_custom', array('menu_name', 'title', 'description'))
+            ->condition('menu_name', $menu_names, 'IN')
+            ->execute();
+        foreach ($result as $menu) {
+            $menu_links = array_merge($menu_links, menu_load_links($menu->menu_name));
+        }
     }
+
     return $menu_links;
 }
 
