@@ -1909,3 +1909,20 @@ function cms_update_7000() {
         watchdog('news', "Unable to load role name '@role'", array("@role" => ROLE_CONTENT_MANAGER), WATCHDOG_WARNING);
     }
 }
+
+/**
+ * Update to set the production url in websites variable
+ */
+
+function cms_update_7001() {
+    $websites = variable_get('websites');
+    if (!empty($websites)) {
+        $path = drupal_get_path('module', 'cms');
+        $path .= DIRECTORY_SEPARATOR . 'websites_update_7001.json';
+        $websites_data = CMSUtils::read_json($path, TRUE);
+        if (!empty($websites_data['servers']['production'])) {
+            $websites['production'] = $websites_data['servers']['production'];
+            variable_set('websites', $websites);
+        }
+    }
+}
