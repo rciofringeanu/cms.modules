@@ -1,0 +1,19 @@
+{
+    "servers" : {
+        "production": {
+            "cms": {
+                "url": "http://cms.int",
+                "title": "CMS"
+            },
+            "aewa": {
+                "url": "http://unep-aewa.org",
+                "title": "AEWA"
+            },
+            "ascobans": {
+                "url": "http://ascobans.org",
+                "title": "ASCOBANS"
+            }
+        }
+    }
+}
+
