@@ -229,9 +229,11 @@ function cms_quicktabs_alter(&$quicktabs) {
  * Act on a node that is being assembled before rendering.
  */
 function cms_node_view($node, $view_mode, $langcode){
+    $domain = domain_get_domain();
+    
     switch ($node->type) {
         case 'legal_instrument':
-            if (is_theme_frontend()) {
+            if (is_theme_frontend() && 'CMS' == $domain['sitename']) {
                 $options = array();
                 $value = (isset($_GET['q']))? '/'.$langcode.'/'.drupal_lookup_path('alias', $_GET['q']) : '';
                 $nodes = CMSBase::get_published_nodes_by_type($node->type);
