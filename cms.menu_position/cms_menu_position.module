@@ -225,6 +225,11 @@ class CMS_Menu_Position {
             "field_type" => null,
             "voc" => null,
         ),
+        "country" => array(
+            "title" => "Country",
+            "field_type" => null,
+            "voc" => null,
+        ),
     );
 
     public static function get_node_type_options() {
