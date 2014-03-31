@@ -139,10 +139,16 @@ function cms_menu_position_menu_links_domain() {
     $domain = $_domain;
 
     $menu_links = array();
-
+    $current_profile = CMSUtils::get_current_profile();
     //on Manage domain menu is not domain-menu-block
     if ($domain['sitename'] == 'Manage') {
         $menu_links = menu_load_links('main-menu');
+
+    } else if ($current_profile != 'cms') {
+        // Non domain-menu-block menus
+        $main_links = menu_load_links('menu-frontend-main-menu');
+        $footer_links = menu_load_links('menu-front-end-footer-menu');
+        $menu_links = array_merge($main_links, $footer_links);
     } else {
         // Ensure that we have a menu block.
         $menu_names = array();
@@ -222,6 +228,11 @@ class CMS_Menu_Position {
         ),
         "working_group" => array(
             "title" => "Working Group",
+            "field_type" => null,
+            "voc" => null,
+        ),
+        "country" => array(
+            "title" => "Country",
             "field_type" => null,
             "voc" => null,
         ),

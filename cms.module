@@ -1928,3 +1928,20 @@ function cms_update_7001() {
         }
     }
 }
+
+/**
+ * Update to set the production url in websites variable
+ */
+
+function cms_update_7002() {
+    $websites = variable_get('websites');
+    if (!empty($websites)) {
+        $path = drupal_get_path('module', 'cms');
+        $path .= DIRECTORY_SEPARATOR . 'websites_update_7001.json';
+        $websites_data = CMSUtils::read_json($path, TRUE);
+        if (!empty($websites_data['servers']['production'])) {
+            $websites['production'] = $websites_data['servers']['production'];
+            variable_set('websites', $websites);
+        }
+    }
+}
