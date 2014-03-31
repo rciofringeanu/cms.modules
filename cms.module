@@ -51,6 +51,20 @@ define('CMS_INSTRUMENT_STATUS_ORGANIZATION', 'cmsInstrumentStatusOrganization');
  */
 define('ROLE_CONTENT_MANAGER', 'content manager');
 
+module_load_include('inc', 'cms', 'cms.migrate');
+/*
+ * Impmentation of hook_migrate_api()
+ */
+function cms_migrate_api() {
+    $api = array(
+        'api' => 2,
+        'migrations' => array(
+            'AEWANews' => array('class_name' => 'AEWANewsMigration')
+        ),
+    );
+    return $api;
+}
+
 /**
  * Define mcrypt IV value
  *
@@ -181,7 +195,6 @@ function cms_domain_instrument_id($domain_id = NULL) {
         return FALSE;
     }
 }
-
 
 /**
  * Implements hook_node_prepare($node) called when a node is loaded for add/edit form

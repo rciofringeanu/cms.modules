@@ -31,3 +31,4 @@ dependencies[] = strongarm
 dependencies[] = taxonomy
 files[] = cms.test
 files[] = utils.php
+files[] = cms.migrate.inc
