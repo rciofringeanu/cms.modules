@@ -95,7 +95,7 @@ function random_species_form($form, &$form_state) {
  * Clear random_species cache
  */
 function random_species_form_handler($form, &$form_state){
-    cache_clear_all('random_species', 'cache');
+    CMSUtils::domain_cache_clear_all('random_species', 'cache');    
 }
 
 /**
@@ -151,7 +151,7 @@ function random_species_get_species() {
             $species_values = random_species_set_values_for_selected_species($result);
         }        
     }elseif(variable_get('random_species_image')){ //random with cck
-        if ($cache = cache_get('random_species', 'cache'))
+        if ($cache = CMSUtils::domain_cache_get('random_species', 'cache'))
             $species_values = $cache->data;
         else
             $species = random_species_get_species_with_cck_image();
@@ -159,7 +159,7 @@ function random_species_get_species() {
             $species_values = random_species_set_values_random_with_cck($species);
         }        
     }else{ //random - all species: select the first one that have image in cck or arkive
-        if ($cache = cache_get('random_species', 'cache'))
+        if ($cache = CMSUtils::domain_cache_get('random_species', 'cache'))
             $species_values = $cache->data;
         else
             $species = random_species_get_selected_species();          
@@ -203,7 +203,7 @@ function random_species_set_values_random_with_cck($result) {
     $species_values['nid'] = $values->nid;
     $species_values['title'] = $values->node_title;
     //Save values in the cache
-    cache_set('random_species', $species_values, 'cache', time() + variable_get('random_species_cache')*24*3600);               
+    CMSUtils::domain_cache_set('random_species', $species_values, 'cache', time() + variable_get('random_species_cache')*24*3600);               
    
     return $species_values;
 }
@@ -234,7 +234,7 @@ function random_species_set_values_random_species($result){
         $species_values['title'] = $item->node_title;
         if(!empty($images)){                        
             // Save values in the cache 
-            cache_set('random_species', $species_values, 'cache', time() + variable_get('random_species_cache')*24*3600);
+            CMSUtils::domain_cache_set('random_species', $species_values, 'cache', time() + variable_get('random_species_cache')*24*3600);
             break;
         }
         $counter++;

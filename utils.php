@@ -1486,4 +1486,40 @@ final class CMSUtils {
         
         return $gallery;
     }
+    
+    /**
+     * Set cache per domain
+     * @param string $cid
+     * @param type $data
+     * @param type $bin
+     * @param type $expire
+     */
+    public static function domain_cache_set($cid, $data, $bin = 'cache', $expire = CACHE_PERMANENT){
+        if(function_exists('domain_get_domain'))
+            $cid = $cid.'_'.domain_get_domain()['domain_id'];
+        cache_set($cid, $data, $bin, $expire);
+    }
+    
+    /**
+     * Get cache per domain
+     * @param string $cid
+     * @param type $bin
+     */
+    public static function domain_cache_get($cid, $bin = 'cache'){
+        if(function_exists('domain_get_domain'))
+            $cid = $cid.'_'.domain_get_domain()['domain_id'];
+        cache_get($cid, $bin);
+    }
+    
+    /**
+     * Delete cache per domain
+     * @param string $cid
+     * @param type $bin
+     * @param type $wildcard
+     */
+    public static function domain_cache_clear_all($cid = NULL, $bin = NULL, $wildcard = FALSE){
+        if(function_exists('domain_get_domain'))
+            $cid = $cid.'_'.domain_get_domain()['domain_id'];
+        cache_clear_all($cid, $bin, $wildcard);
+    }
 }
