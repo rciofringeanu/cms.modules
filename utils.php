@@ -1508,7 +1508,8 @@ final class CMSUtils {
     public static function domain_cache_get($cid, $bin = 'cache'){
         if(function_exists('domain_get_domain'))
             $cid = $cid.'_'.domain_get_domain()['domain_id'];
-        cache_get($cid, $bin);
+        
+        return cache_get($cid, $bin);
     }
     
     /**
