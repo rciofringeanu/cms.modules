@@ -373,7 +373,20 @@ function template_preprocess_datatables_view(&$vars) {
         if (isset($_GET) && (!empty($_GET))) {
             foreach ($_GET as $filter => $value) {
                 if ($filter !== 'q') {
-                    $query .= '&' . $filter . '=' . $value;
+                    //support for array values
+                    if (is_array($value)) {
+                        foreach($value as $key => $val) {
+                            if(isset($val['date'])) {
+                                //support for date field
+                                $query .= "&$filter" ."[$key]" . "[date]=" . $val['date'];
+                            } else {
+                                $query .= "&$filter" ."[$key]=" .$val;
+                            }
+                        }
+                    } else {
+                        $query .= '&' . $filter . '=' . $value;
+                    }
+
                 }
             }
         }
