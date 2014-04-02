@@ -219,7 +219,7 @@ function random_species_set_values_random_species($result){
             break;
         
         //get images form cck field
-        $images = $values->field_field_species_images;
+        $images = $item->field_field_species_images;
         $image_type = 'cck';
         //get images from arkive
         if(empty($images)){             
