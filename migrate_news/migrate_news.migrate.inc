@@ -13,26 +13,29 @@ class CustomCSV extends MigrateSourceCSV {
 }
 
 class AEWANewsMigration extends Migration {
+
+    protected $columns = array(
+        0 => array('id_csv', 'Id'),
+        1 => array('created_csv', 'created'),
+        2 => array('title_csv', 'title'),
+        3 => array('title_fr_csv', 'title_fr'),
+        4 => array('body_url_csv', 'body'),
+        5 => array('body_url_fr_csv', 'body_fr'),
+    );
+
+
     public function __construct() {
         parent::__construct();
         ini_set('auto_detect_line_endings', TRUE);
         //The defintion of the collumns. Keys are integers. values are array(field name, description).
-        $columns = array(
-            0 => array('id_csv', 'Id'),
-            1 => array('created_csv', 'created'),
-            2 => array('title_csv', 'title'),
-            3 => array('title_fr_csv', 'title_fr'),
-            4 => array('body_url_csv', 'body'),
-            5 => array('body_url_fr_csv', 'body_fr'),
-        );
 
         //The Description of the import. This desription is shown on the Migrate GUI
         $this->description = t('Import of news content.');
 
         //The Source of the import
         $this->source = new CustomCSV(
-            drupal_get_path('module', 'migrate_news') . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'aewa.csv',
-            $columns, array('delimiter' => ',', 'header_rows' => 1));
+            drupal_get_path('module', 'migrate_news') . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'test.csv',
+            $this->columns, array('delimiter' => ',', 'header_rows' => 1));
 
         //The destination CCK (boundle)
         $this->destination = new MigrateDestinationNode('news');
@@ -121,15 +124,6 @@ class CMSNewsMigration extends AEWANewsMigration {
 
     public function __construct() {
         parent::__construct();
-        //The defintion of the collumns. Keys are integers. values are array(field name, description).
-        $columns = array(
-            0 => array('id_csv', 'Id'),
-            1 => array('created_csv', 'created'),
-            2 => array('title_csv', 'title'),
-            3 => array('title_fr_csv', 'title_fr'),
-            4 => array('body_url_csv', 'body'),
-        );
-
         //The Description of the import. This desription is shown on the Migrate GUI
         $this->description = t('Import CMS news content.');
 
@@ -138,28 +132,7 @@ class CMSNewsMigration extends AEWANewsMigration {
             drupal_get_path('module', 'migrate_news') . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'cms.csv',
             $columns, array('delimiter' => ',', 'header_rows' => 1));
 
-        //The destination CCK (boundle)
-        $this->destination = new MigrateDestinationNode('news');
-
-        //Source and destination relation for rollbacks
-        $this->map = new MigrateSQLMap(
-            $this->machineName,
-            array(
-                'id_csv' => array(
-                    'type' => 'int',
-                    'unsigned' => TRUE,
-                    'not null' => TRUE,
-                    'alias' => 'import'
-                )
-            ),
-            MigrateDestinationNode::getKeySchema()
-        );
-
-        //Field ampping
-        $this->addFieldMapping('title', 'title_csv');
-        $this->addFieldMapping('created', 'created_csv');
-        $this->addFieldMapping('body', 'body_url_csv')->callbacks(array($this, 'processBody'));
-        $this->addFieldMapping('body:format')->defaultValue('full_html');
-        $this->addFieldMapping('field_featured_image')->defaultValue(NULL);
+        $this->removeFieldMapping("uid");
+        $this->addFieldMapping('uid')->defaultValue(5); // NEpler
     }
 }

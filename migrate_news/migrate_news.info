@@ -6,4 +6,7 @@ package = CMS
 php = 5.2.4
 version = 7.x-0.1
 
+dependencies[] = migrate
+dependencies[] = querypath
+
 files[] = migrate_news.migrate.inc
