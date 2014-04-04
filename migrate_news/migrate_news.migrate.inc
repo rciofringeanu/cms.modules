@@ -69,7 +69,14 @@ class AEWANewsMigration extends Migration {
         $this->addFieldMapping('uid')->defaultValue(4); // NEpler
     }
 
-    public function processBody($url) {
+    public function prepareRow($row) {
+        parent::prepareRow($row);
+        $this->processBody($row);
+        return TRUE;
+    }
+
+    public function processBody(&$row) {
+        $url = $row->body_url_csv;
         $html = file_get_contents($url);
         $qp = @htmlqp($html, NULL, array('convert_to_encoding' => 'utf-8'));
 
@@ -113,6 +120,7 @@ class AEWANewsMigration extends Migration {
                         $img->attr('src', $new_url);
                         // Record this file as used by this node/our module.
                         //file_usage_add($file, 'cms', 'node', $entity->nid);
+                        $row->files[] = $file; // Attach files, so we can later mark them as used by item file_usage_add($file, 'MYMODULE', 'node', $entity->nid)
                     }
                     fclose($handle);
                 }
@@ -123,8 +131,15 @@ class AEWANewsMigration extends Migration {
         }
         return $qp->top()->find('body')->innerXHTML();
     }
-}
 
+    public function complete($entity, $source_row) {
+        if(!empty($source_row->files)) {
+            foreach($source_row->files as $file) {
+                file_usage_add($file, 'cms_news', 'node', $entity->nid); // Mark the file as in use
+            }
+        }
+    }
+}
 
 
 class CMSNewsMigration extends AEWANewsMigration {
@@ -137,7 +152,7 @@ class CMSNewsMigration extends AEWANewsMigration {
         //The Source of the import
         $this->source = new CustomCSV(
             drupal_get_path('module', 'migrate_news') . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'cms.csv',
-            $columns, array('delimiter' => ',', 'header_rows' => 1));
+            $this->columns, array('delimiter' => ',', 'header_rows' => 1));
 
         $this->removeFieldMapping("uid");
         $this->addFieldMapping('uid')->defaultValue(5); // NEpler
