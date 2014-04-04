@@ -1,0 +1,9 @@
+name = CMS News Migration
+project = migrate_news
+description = Migrate old static content from CSV files
+core = 7.x
+package = CMS
+php = 5.2.4
+version = 7.x-0.1
+
+files[] = migrate_news.migrate.inc

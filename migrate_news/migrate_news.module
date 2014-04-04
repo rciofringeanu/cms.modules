@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * Implements hook_migrate_api()
+ */
+function cms_migrate_api() {
+    $api = array(
+        'api' => 2,
+        'migrations' => array(
+            'AEWANews' => array('class_name' => 'AEWANewsMigration'),
+            'CMSNews' => array('class_name' => 'CMSNewsMigration'),
+        ),
+    );
+    return $api;
+}
