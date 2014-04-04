@@ -34,7 +34,7 @@ class AEWANewsMigration extends Migration {
 
         //The Source of the import
         $this->source = new CustomCSV(
-            drupal_get_path('module', 'migrate_news') . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'test.csv',
+            drupal_get_path('module', 'migrate_news') . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'aewa.csv',
             $this->columns, array('delimiter' => ',', 'header_rows' => 1));
 
         //The destination CCK (boundle)
