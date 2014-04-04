@@ -171,15 +171,16 @@ function cms_node_load($nodes, $types) {
  * @return integer instrument node id or FALSE
  */
 function cms_domain_instrument_id($domain_id = NULL) {
-    if ($domain_id === NULL) {
-        $domain = domain_get_domain();
-        $domain_id = $domain['domain_id'];
+    if (CMSUtils::get_current_profile() == 'cms') {
+        if ($domain_id === NULL) {
+            $domain = domain_get_domain();
+            $domain_id = $domain['domain_id'];
+        }
+        if (!empty(CMSBase::$domain_instrument[$domain_id]['instrument'])) {
+            return CMSBase::$domain_instrument[$domain_id]['instrument'];
+        }
     }
-    if (!empty(CMSBase::$domain_instrument[$domain_id]['instrument'])) {
-        return CMSBase::$domain_instrument[$domain_id]['instrument'];
-    } else {
-        return FALSE;
-    }
+    return FALSE;
 }
 
 /**
@@ -229,7 +230,7 @@ function cms_quicktabs_alter(&$quicktabs) {
  */
 function cms_node_view($node, $view_mode, $langcode){
     $domain = domain_get_domain();
-    
+
     switch ($node->type) {
         case 'legal_instrument':
             if (is_theme_frontend() && 'CMS' == $domain['sitename']) {
