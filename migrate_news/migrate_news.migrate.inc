@@ -57,9 +57,16 @@ class AEWANewsMigration extends Migration {
         //Field ampping
         $this->addFieldMapping('title', 'title_csv');
         $this->addFieldMapping('created', 'created_csv');
-        $this->addFieldMapping('body', 'body_url_csv')->callbacks(array($this, 'processBody'));
+        $this->addFieldMapping('changed', 'created_csv');
+        $this->addFieldMapping('status')->defaultValue(0);
+        $this->addFieldMapping('sticky')->defaultValue(0);
+        $this->addFieldMapping('promote')->defaultValue(0);
+        $this->addFieldMapping('language')->defaultValue('en');
+        $this->addFieldMapping('domain_site')->defaultValue(1);
+        $this->addFieldMapping('comment')->defaultValue(1);
+        $this->addFieldMapping('body', 'body_url_csv');
         $this->addFieldMapping('body:format')->defaultValue('full_html');
-        $this->addFieldMapping('field_featured_image')->defaultValue(NULL);
+        $this->addFieldMapping('uid')->defaultValue(4); // NEpler
     }
 
     public function processBody($url) {
