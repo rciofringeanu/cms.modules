@@ -129,7 +129,7 @@ class AEWANewsMigration extends Migration {
                 drupal_set_message($e->getMessage(), 'error');
             }
         }
-        return $qp->top()->find('body')->innerXHTML();
+        $row->body_url_csv = $qp->top()->find('body')->innerXHTML();
     }
 
     public function complete($entity, $source_row) {
